@@ -1309,6 +1309,40 @@ console.log("✓ KanbanMenu 初期化完了");
 
   function 丸(v) { return Math.round(Number(v) || 0); }
 
+  // ===== 座標変換関数（パーセンテージベース） =====
+
+  // ピクセル座標をパーセンテージに変換（保存時）
+  function ピクセルからパーセンテージ(pixelX, pixelY, panelWidth, panelHeight) {
+    if (!panelWidth || !panelHeight) {
+      console.warn("パネルサイズが0です:", { panelWidth, panelHeight });
+      return { percentX: 0, percentY: 0 };
+    }
+    const percentX = (pixelX / panelWidth) * 100;
+    const percentY = (pixelY / panelHeight) * 100;
+    return {
+      percentX: Math.round(percentX * 100) / 100,  // 小数点2桁まで
+      percentY: Math.round(percentY * 100) / 100
+    };
+  }
+
+  // パーセンテージをピクセル座標に変換（表示時）
+  function パーセンテージからピクセル(percentX, percentY, panelWidth, panelHeight) {
+    const pixelX = (percentX / 100) * panelWidth;
+    const pixelY = (percentY / 100) * panelHeight;
+    return {
+      pixelX: Math.round(pixelX),
+      pixelY: Math.round(pixelY)
+    };
+  }
+
+  // 座標が旧形式（ピクセル）か新形式（パーセンテージ）かを判定
+  // ピクセル形式は100より大きい値になるため、それで判別
+  function is旧ピクセル形式(x, y) {
+    return (x > 100 || y > 100);
+  }
+
+  // ===== 既存の座標処理関数 =====
+
   function パネル相対に直す(detail, ctx) {
     const { x, y, area, clientX, clientY } = detail || {};
     if (!ctx || !ctx.レイヤ || !ctx.左パネル || !ctx.右パネル) return { x: null, y: null };
@@ -1368,10 +1402,22 @@ console.log("✓ KanbanMenu 初期化完了");
       console.warn("保存スキップ: _ctx未初期化"); return;
     }
 
-    const { x, y } = パネル相対に直す(detail, w.KanbanFrameSingle._ctx);
-    if (x == null || y == null) { console.warn("保存スキップ: 座標null"); return; }
+    const ctx = w.KanbanFrameSingle._ctx;
+    const { x: pixelX, y: pixelY } = パネル相対に直す(detail, ctx);
+    if (pixelX == null || pixelY == null) { console.warn("保存スキップ: 座標null"); return; }
 
-    const updates = 構築_updates(x, y, area);
+    // パネルサイズを取得
+    const panelEl = (area === "右") ? ctx.右パネル : ctx.左パネル;
+    const panelRect = panelEl.getBoundingClientRect();
+    const panelWidth = panelRect.width;
+    const panelHeight = panelRect.height;
+
+    // ★ ピクセル座標をパーセンテージに変換して保存
+    const { percentX, percentY } = ピクセルからパーセンテージ(pixelX, pixelY, panelWidth, panelHeight);
+
+    console.log(`▶ 座標変換: ピクセル(${Math.round(pixelX)}, ${Math.round(pixelY)}) → パーセンテージ(${percentX}%, ${percentY}%) / パネル(${Math.round(panelWidth)}x${Math.round(panelHeight)})`);
+
+    const updates = 構築_updates(percentX, percentY, area);
     console.log(`▶ 保存準備 id=${id}, area=${area}, updates=`, updates);
 
     if (!w.PleasanterUpdateApi || typeof w.PleasanterUpdateApi.レコード更新 !== "function") {
@@ -1390,17 +1436,18 @@ console.log("✓ KanbanMenu 初期化完了");
           const S = w.Kanban設定 || {};
           const KX = (area === "右") ? (S.フィールド名_X右 || "NumX2") : (S.フィールド名_X || "NumX");
           const KY = (area === "右") ? (S.フィールド名_Y右 || "NumY2") : (S.フィールド名_Y || "NumY");
-          if (S.書込キー直下) { rec[KX] = x; rec[KY] = y; }
+          // ★ キャッシュにもパーセンテージを保存
+          if (S.書込キー直下) { rec[KX] = percentX; rec[KY] = percentY; }
           else {
             let nh = rec.NumHash;
             try { if (typeof nh === "string") nh = JSON.parse(nh || "{}"); } catch { nh = {}; }
             if (!nh || typeof nh !== "object") nh = {};
-            nh[KX] = x; nh[KY] = y; rec.NumHash = nh;
+            nh[KX] = percentX; nh[KY] = percentY; rec.NumHash = nh;
           }
           if (typeof rec.Revision === "number") rec.Revision += 1;
         }
       }
-      console.log(`▶ 保存成功 id=${id} (${area}) x=${x}, y=${y}`);
+      console.log(`▶ 保存成功 id=${id} (${area}) x=${percentX}%, y=${percentY}%`);
     } catch (e) {
       console.error("▶ 保存失敗:", e && e.message ? e.message : e);
     }
@@ -1624,12 +1671,24 @@ console.log("✓ KanbanDropSave 初期化完了");
       const kx = (panel === "右") ? "NumX2" : "NumX";
       const ky = (panel === "右") ? "NumY2" : "NumY";
 
-      let x = Number(nh[kx]);
-      let y = Number(nh[ky]);
+      let storedX = Number(nh[kx]);
+      let storedY = Number(nh[ky]);
 
-      if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      let x, y; // パネル相対のピクセル座標
+
+      if (!Number.isFinite(storedX) || !Number.isFinite(storedY)) {
+        // 座標が未設定の場合：グリッド配置
         const p = パネル内座標(pr.width, i);
         x = p.x; y = p.y;
+      } else if (is旧ピクセル形式(storedX, storedY)) {
+        // ★ 旧形式（ピクセル）：そのまま使用（後方互換性）
+        x = storedX;
+        y = storedY;
+      } else {
+        // ★ 新形式（パーセンテージ）：ピクセルに変換
+        const converted = パーセンテージからピクセル(storedX, storedY, pr.width, pr.height);
+        x = converted.pixelX;
+        y = converted.pixelY;
       }
 
       const layerX = x + offX;
