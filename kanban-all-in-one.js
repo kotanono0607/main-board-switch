@@ -1346,6 +1346,50 @@ console.log("✓ KanbanMenu 初期化完了");
   w.パーセンテージからピクセル = パーセンテージからピクセル;
   w.is旧ピクセル形式 = is旧ピクセル形式;
 
+  // ===== 画像の実際の表示サイズを計算（object-fit: contain対応） =====
+
+  /**
+   * object-fit: contain が適用された画像の実際の表示サイズとオフセットを計算
+   * @param {HTMLImageElement} img - 画像要素
+   * @param {number} containerWidth - コンテナの幅
+   * @param {number} containerHeight - コンテナの高さ
+   * @returns {{width: number, height: number, offsetX: number, offsetY: number}}
+   */
+  function 画像の実表示サイズを取得(img, containerWidth, containerHeight) {
+    if (!img || !img.naturalWidth || !img.naturalHeight) {
+      console.warn("画像情報が取得できません", { img, naturalWidth: img?.naturalWidth, naturalHeight: img?.naturalHeight });
+      return { width: containerWidth, height: containerHeight, offsetX: 0, offsetY: 0 };
+    }
+
+    const imgAspect = img.naturalWidth / img.naturalHeight;
+    const containerAspect = containerWidth / containerHeight;
+
+    let displayWidth, displayHeight, offsetX, offsetY;
+
+    if (imgAspect > containerAspect) {
+      // 画像が横長 → 幅に合わせる
+      displayWidth = containerWidth;
+      displayHeight = containerWidth / imgAspect;
+      offsetX = 0;
+      offsetY = (containerHeight - displayHeight) / 2;
+    } else {
+      // 画像が縦長 → 高さに合わせる
+      displayHeight = containerHeight;
+      displayWidth = containerHeight * imgAspect;
+      offsetX = (containerWidth - displayWidth) / 2;
+      offsetY = 0;
+    }
+
+    return {
+      width: displayWidth,
+      height: displayHeight,
+      offsetX: offsetX,
+      offsetY: offsetY
+    };
+  }
+
+  w.画像の実表示サイズを取得 = 画像の実表示サイズを取得;
+
   // ===== 既存の座標処理関数 =====
 
   function パネル相対に直す(detail, ctx) {
@@ -1411,16 +1455,22 @@ console.log("✓ KanbanMenu 初期化完了");
     const { x: pixelX, y: pixelY } = パネル相対に直す(detail, ctx);
     if (pixelX == null || pixelY == null) { console.warn("保存スキップ: 座標null"); return; }
 
-    // パネルサイズを取得
+    // パネルと画像を取得
     const panelEl = (area === "右") ? ctx.右パネル : ctx.左パネル;
+    const imgEl = (area === "右") ? ctx.右画像 : ctx.左画像;
     const panelRect = panelEl.getBoundingClientRect();
-    const panelWidth = panelRect.width;
-    const panelHeight = panelRect.height;
 
-    // ★ ピクセル座標をパーセンテージに変換して保存
-    const { percentX, percentY } = ピクセルからパーセンテージ(pixelX, pixelY, panelWidth, panelHeight);
+    // ★ 画像の実際の表示サイズとオフセットを計算（object-fit: contain対応）
+    const imgDisplay = 画像の実表示サイズを取得(imgEl, panelRect.width, panelRect.height);
 
-    console.log(`▶ 座標変換: ピクセル(${Math.round(pixelX)}, ${Math.round(pixelY)}) → パーセンテージ(${percentX}%, ${percentY}%) / パネル(${Math.round(panelWidth)}x${Math.round(panelHeight)})`);
+    // ★ パネル相対座標を画像相対座標に変換（オフセットを引く）
+    const imgRelativeX = pixelX - imgDisplay.offsetX;
+    const imgRelativeY = pixelY - imgDisplay.offsetY;
+
+    // ★ 画像サイズを基準にパーセンテージに変換
+    const { percentX, percentY } = ピクセルからパーセンテージ(imgRelativeX, imgRelativeY, imgDisplay.width, imgDisplay.height);
+
+    console.log(`▶ 座標変換: パネル相対(${Math.round(pixelX)}, ${Math.round(pixelY)}) → 画像相対(${Math.round(imgRelativeX)}, ${Math.round(imgRelativeY)}) → パーセンテージ(${percentX}%, ${percentY}%) / 画像表示サイズ(${Math.round(imgDisplay.width)}x${Math.round(imgDisplay.height)})`);
 
     const updates = 構築_updates(percentX, percentY, area);
     console.log(`▶ 保存準備 id=${id}, area=${area}, updates=`, updates);
@@ -1658,12 +1708,18 @@ console.log("✓ KanbanDropSave 初期化完了");
   }
 
   function 配置する(ctx, recs, panel) {
-    const { doc, レイヤ, 左パネル, 右パネル } = ctx;
+    const { doc, レイヤ, 左パネル, 右パネル, 左画像, 右画像 } = ctx;
     const panelEl = (panel === "右") ? 右パネル : 左パネル;
+    const imgEl = (panel === "右") ? 右画像 : 左画像;
     const pr = panelEl.getBoundingClientRect();
     const lr = レイヤ.getBoundingClientRect();
     const offX = pr.left - lr.left;
     const offY = pr.top  - lr.top;
+
+    // ★ 画像の実際の表示サイズとオフセットを計算（object-fit: contain対応）
+    const imgDisplay = w.画像の実表示サイズを取得
+      ? w.画像の実表示サイズを取得(imgEl, pr.width, pr.height)
+      : { width: pr.width, height: pr.height, offsetX: 0, offsetY: 0 };
 
     const 色集計 = { 全:0, ヒット:0, ミス:0, 空:0, byTable:{} };
     const 色集計45173J = { 全:0, 一致:0, 不一致:0, 空:0, sample出力件数: {} };
@@ -1690,10 +1746,11 @@ console.log("✓ KanbanDropSave 初期化完了");
         x = storedX;
         y = storedY;
       } else if (w.パーセンテージからピクセル && storedX <= 100 && storedY <= 100) {
-        // ★ 新形式（パーセンテージ）：ピクセルに変換
-        const converted = w.パーセンテージからピクセル(storedX, storedY, pr.width, pr.height);
-        x = converted.pixelX;
-        y = converted.pixelY;
+        // ★ 新形式（パーセンテージ）：画像サイズを基準にピクセルに変換
+        const converted = w.パーセンテージからピクセル(storedX, storedY, imgDisplay.width, imgDisplay.height);
+        // 画像相対座標にオフセットを加えてパネル相対座標に変換
+        x = converted.pixelX + imgDisplay.offsetX;
+        y = converted.pixelY + imgDisplay.offsetY;
       } else {
         // フォールバック：そのまま使用
         x = storedX;
