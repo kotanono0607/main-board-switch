@@ -1,0 +1,39 @@
+const sources = [
+  "http://gwsv.nanyo-ad.ad.nanyo/binaries/d2f078b082654109b01b4196facb460f/download", // kanban-config.js
+  "http://gwsv.nanyo-ad.ad.nanyo/binaries/a74db379b9454e66a768666645513df0/download", //kanban-frame-single.js
+  "http://gwsv.nanyo-ad.ad.nanyo/binaries/eaae04e96e59437fa24737f03f548d30/download", // kanban-labels.js
+  "http://gwsv.nanyo-ad.ad.nanyo/binaries/342383e2ff20452c86c653e1b44383d0/download", // pleasanter-api.js
+  "http://gwsv.nanyo-ad.ad.nanyo/binaries/bc36065cab0442b680f28b3a18bd07c3/download", // pleasanter-update-api.js
+  "http://gwsv.nanyo-ad.ad.nanyo/binaries/86db5a1954f241f19ea9d81cb2c73428/download", // kanban-menu.js
+  "http://gwsv.nanyo-ad.ad.nanyo/binaries/31d37e3f3e5a4f8f93791346e7250661/download", // kanban-bootstrap.js
+  "http://gwsv.nanyo-ad.ad.nanyo/binaries/884f8c00bb9b41dd9c21876ddc278d5b/download",  //pleasanter-api2.js
+ "http://gwsv.nanyo-ad.ad.nanyo/binaries/6ba727af5bef404294b18439f50def1c/download",  //pleasanter-api3.js
+ "http://gwsv.nanyo-ad.ad.nanyo/binaries/942f468f4dc64f2298509af03e144346/download"  //
+];
+
+function loadScriptsSequentially(list, index = 0) {
+  if (index >= list.length) {
+    console.log("▶ 全てのスクリプトを読み込み完了");
+    // ★ Kanban起動を呼ぶ（既存Kanban用）
+    if (window.Kanban起動) {
+      window.Kanban起動();
+    } else {
+      console.warn("Kanban起動 関数が見つかりません。読み込み順やURLを確認してください。");
+    }
+    return;
+  }
+  const s = document.createElement("script");
+  s.src = list[index];
+  s.onload = () => {
+    console.log("読み込み完了:", list[index]);
+    loadScriptsSequentially(list, index + 1);
+  };
+  s.onerror = () => {
+    console.error("読み込み失敗:", list[index]);
+    loadScriptsSequentially(list, index + 1);
+  };
+  document.head.appendChild(s);
+}
+
+// 実行
+loadScriptsSequentially(sources);
