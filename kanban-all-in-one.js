@@ -1341,6 +1341,11 @@ console.log("✓ KanbanMenu 初期化完了");
     return (x > 100 || y > 100);
   }
 
+  // ★ 他のモジュールから使えるようにグローバルに公開
+  w.ピクセルからパーセンテージ = ピクセルからパーセンテージ;
+  w.パーセンテージからピクセル = パーセンテージからピクセル;
+  w.is旧ピクセル形式 = is旧ピクセル形式;
+
   // ===== 既存の座標処理関数 =====
 
   function パネル相対に直す(detail, ctx) {
@@ -1680,15 +1685,19 @@ console.log("✓ KanbanDropSave 初期化完了");
         // 座標が未設定の場合：グリッド配置
         const p = パネル内座標(pr.width, i);
         x = p.x; y = p.y;
-      } else if (is旧ピクセル形式(storedX, storedY)) {
+      } else if (w.is旧ピクセル形式 && w.is旧ピクセル形式(storedX, storedY)) {
         // ★ 旧形式（ピクセル）：そのまま使用（後方互換性）
         x = storedX;
         y = storedY;
-      } else {
+      } else if (w.パーセンテージからピクセル && storedX <= 100 && storedY <= 100) {
         // ★ 新形式（パーセンテージ）：ピクセルに変換
-        const converted = パーセンテージからピクセル(storedX, storedY, pr.width, pr.height);
+        const converted = w.パーセンテージからピクセル(storedX, storedY, pr.width, pr.height);
         x = converted.pixelX;
         y = converted.pixelY;
+      } else {
+        // フォールバック：そのまま使用
+        x = storedX;
+        y = storedY;
       }
 
       const layerX = x + offX;
