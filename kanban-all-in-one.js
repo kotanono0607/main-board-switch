@@ -1320,8 +1320,8 @@ console.log("✓ KanbanMenu 初期化完了");
     const percentX = (pixelX / panelWidth) * 100;
     const percentY = (pixelY / panelHeight) * 100;
     return {
-      percentX: Math.round(percentX * 100) / 100,  // 小数点2桁まで
-      percentY: Math.round(percentY * 100) / 100
+      percentX: Math.round(percentX),  // 整数値（0-100）サーバーエラー回避
+      percentY: Math.round(percentY)
     };
   }
 
