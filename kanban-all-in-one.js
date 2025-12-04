@@ -83,8 +83,8 @@
     },
 
     /* ----- 初期表示時の抽出（左パネル） ----- */
-    // ★「サーバー室」以外を初期抽出（従来値が既にサーバー室以外ならそのままでOK）
-    初期抽出: { 対象フィールド: "ClassO", 値: "会計課" },
+    // ★初期表示は空（メニュークリックまで何も表示しない）
+    初期抽出: { 対象フィールド: "ClassO", 値: null },
 
     /* ===== 右側は"サーバー室"に固定 ===== */
     固定右フレーム: {
@@ -482,7 +482,34 @@ function ラベル見た目スタイルを注入(targetDoc) {
     let 左名 =
       (typeof 明示左名 === "string" && 明示左名) ||
       (w.Kanban現在 && w.Kanban現在.左画像名) ||
-      (s?.初期抽出?.値) || "";
+      (s?.初期抽出?.値);
+
+    // 初期値がnullの場合の処理
+    if (左名 === null || 左名 === undefined) {
+      const 左El = document.getElementById("kanban-上段帯-左");
+      if (左El) {
+        const leftText = "所属名：未選択（左メニューから選択してください）";
+        左El.textContent = leftText;
+        左El.title = leftText;
+      }
+
+      // 右側は表示
+      let 右件 = 0;
+      try { 右件 = 右側件数を数える(); } catch (e) { err("右件数計算エラー:", e); }
+      const 右El = document.getElementById("kanban-上段帯-右");
+      if (右El) {
+        const rightText = `右(${固定右名}) PC台数: ${右件}件`;
+        右El.textContent = rightText;
+        右El.title = rightText;
+      }
+
+      dbg("上段帯更新結果", { 左名: "未選択", 固定右名, 右件 });
+      console.groupEnd?.();
+      return;
+    }
+
+    // 左名が空文字列の場合は「その他」にする
+    if (!左名) 左名 = "その他";
 
     // 左でサーバー室は使わない
     if (左名 === 固定右名) {
@@ -490,7 +517,6 @@ function ラベル見た目スタイルを注入(targetDoc) {
       左名 = (first && first.名前) || "その他";
       dbg("左名が固定右と同一のため置換:", { 左名 });
     }
-    if (!左名) 左名 = "その他";
 
     // 内訳を所属ごとに集計
     const counts = テーブル別内訳カウント(左名);
@@ -1525,7 +1551,20 @@ console.log("✓ KanbanDropSave 初期化完了");
   function 現在の左画像名() {
     const s = w.Kanban設定 || {};
     const 固定名 = (s?.固定右フレーム?.画像名) || 固定右名;
-    let name = (w.Kanban現在 && w.Kanban現在.左画像名) || (s?.初期抽出?.値) || "その他";
+
+    // Kanban現在に左画像名があればそれを使う（メニュークリック後）
+    if (w.Kanban現在 && w.Kanban現在.左画像名) {
+      return w.Kanban現在.左画像名;
+    }
+
+    // 初期抽出値がnullの場合はnullを返す（初期表示なし）
+    const 初期値 = s?.初期抽出?.値;
+    if (初期値 === null || 初期値 === undefined) {
+      return null;
+    }
+
+    // 初期値があれば使う
+    let name = 初期値 || "その他";
     if (name === 固定名) {
       const first = (s.画像候補 || []).find(x => (x.名前 || "") !== 固定名 && (x.名前 || "") !== "その他");
       name = first?.名前 || "その他";
@@ -1746,20 +1785,31 @@ console.log("✓ KanbanDropSave 初期化完了");
     const 固定右_正規 = 正規化(s?.固定右フレーム?.画像名 || 固定右名);
     const 左名_現在   = 現在の左画像名();
 
-    const 左対象 = 左側の抽出(records, 左名_現在);
     const 右対象 = records.filter(r => 正規化(所属名(r)) === 固定右_正規);
 
     if (DEBUG) {
       const cnt = { 45208: 0, 45173: 0, 121624: 0 };
       records.forEach(r => { cnt[r._tableId] = (cnt[r._tableId] || 0) + 1; });
       console.log("テーブル別件数:", cnt);
-      console.log(`[初期] 左(${左名_現在})=${左対象.length}, 右(${固定右名})=${右対象.length}`);
     }
 
-    配置する(ctx, 左対象, "左");
-    配置する(ctx, 右対象, "右");
+    // 左パネル：初期値がnullの場合は配置しない（メニュークリックまで待つ）
+    if (左名_現在 !== null) {
+      const 左対象 = 左側の抽出(records, 左名_現在);
+      if (DEBUG) {
+        console.log(`[初期] 左(${左名_現在})=${左対象.length}, 右(${固定右名})=${右対象.length}`);
+      }
+      配置する(ctx, 左対象, "左");
+      console.log("配置完了: 左=", 左対象.length, "右=", 右対象.length);
+    } else {
+      if (DEBUG) {
+        console.log(`[初期] 左=未選択（表示なし）, 右(${固定右名})=${右対象.length}`);
+      }
+      console.log("初期表示: 左パネルは空（メニューから選択してください）");
+    }
 
-    console.log("配置完了: 左=", 左対象.length, "右=", 右対象.length);
+    // 右パネル：常に表示（サーバー室固定）
+    配置する(ctx, 右対象, "右");
 
     /* ---------- 画像選択（左切替。「その他」対応） ---------- */
     w.addEventListener("kanban:imageSelected", async (ev) => {
