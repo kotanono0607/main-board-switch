@@ -1803,11 +1803,40 @@ console.log("✓ KanbanDropSave 初期化完了");
 console.log("✓ KanbanBootstrap 初期化完了");
 
 /* ===============================================================
- * 自動起動
+ * 自動起動（メイン.txt の機能を統合）
+ * ページ読み込み完了後、自動的にKanban起動を実行
  * ============================================================= */
 console.log("========================================");
 console.log("Kanban All-in-One システム読み込み完了");
 console.log("========================================");
-console.log("起動方法: window.Kanban起動() を実行してください");
+
+// 自動起動関数（メイン.txt の loadScriptsSequentially と同等の機能）
+(function 自動起動() {
+  if (document.readyState === "loading") {
+    // DOMがまだ読み込み中の場合は、DOMContentLoadedを待つ
+    document.addEventListener("DOMContentLoaded", function 起動実行() {
+      console.log("▶ DOMContentLoaded: Kanban起動を開始します");
+      setTimeout(() => {
+        if (window.Kanban起動) {
+          window.Kanban起動();
+        } else {
+          console.error("Kanban起動 関数が見つかりません");
+        }
+      }, 100); // わずかな遅延で確実に初期化
+    });
+  } else if (document.readyState === "interactive" || document.readyState === "complete") {
+    // DOMが既に読み込まれている場合は即座に実行
+    console.log("▶ DOM既に読み込み済み: Kanban起動を開始します");
+    setTimeout(() => {
+      if (window.Kanban起動) {
+        window.Kanban起動();
+      } else {
+        console.error("Kanban起動 関数が見つかりません");
+      }
+    }, 100);
+  }
+})();
+
+console.log("✓ 自動起動設定完了（このファイルを読み込むだけで自動的に起動します）");
 
 })(window);
