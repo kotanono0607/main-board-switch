@@ -27,7 +27,15 @@
     書込キー直下: false, // true: NumX/NumY を直下列へ保存
 
     /* ----- フレーム（iframe）配置（左：可変フレーム） ----- */
-    枠: { top: "100px", left: "900px", width: "950px", height: "700px" },
+    // ★ OS表示倍率対応：基準サイズ（OS表示倍率100%での表示サイズ）
+    // 実際のiframeサイズは、DPR（デバイスピクセル比）で自動調整される
+    // 例：OS表示倍率125%（DPR=1.25）の場合、width: 950/1.25=760px で設定され、表示サイズは950pxになる
+    枠: {
+      top: "100px",
+      left: "900px",
+      baseWidth: 950,   // 基準幅（OS表示倍率100%での表示サイズ）
+      baseHeight: 700   // 基準高さ（OS表示倍率100%での表示サイズ）
+    },
 
     /* ----- 画像メニュー設定（左のみで使用） ----- */
     // ★メニューからは「サーバー室」を選べない想定：候補に含めない
@@ -558,22 +566,31 @@ function ラベル見た目スタイルを注入(targetDoc) {
     // 初期表示（キャッシュがまだ無くても暫定表示）
     上段帯を更新(上段El, s);
 
+    // ★ OS表示倍率対応：DPRを取得して、実際のiframeサイズを計算
+    const dpr = window.devicePixelRatio || 1;
+    const baseWidth = s?.枠?.baseWidth || s?.枠?.width || 950;
+    const baseHeight = s?.枠?.baseHeight || s?.枠?.height || 700;
+
+    // DPRで割ることで、すべてのOS表示倍率で同じ表示サイズになる
+    // 例：OS表示倍率125%（DPR=1.25）の場合、950/1.25=760px で設定され、表示サイズは950pxになる
+    const actualWidth = Math.round(baseWidth / dpr);
+    const actualHeight = Math.round(baseHeight / dpr);
+
+    console.log(`[iframe枠] DPR=${dpr.toFixed(2)}, 基準サイズ=${baseWidth}x${baseHeight}, 実サイズ=${actualWidth}x${actualHeight}`);
+
     // 親ページ側の外枠
     const 枠 = document.createElement("div");
     Object.assign(枠.style, {
       position: "absolute",
       top:  s?.枠?.top,
       left: s?.枠?.left,
-      width: s?.枠?.width,
-      height:s?.枠?.height,
+      width: actualWidth + "px",
+      height: actualHeight + "px",
       background: "#fff",
       border: "1px solid #ccc",
       borderRadius: "8px",
       zIndex: 9999
     });
-
-    // ★ 枠サイズをログ出力（OS表示倍率の影響確認）
-    console.log(`[iframe枠] サイズ設定: width=${s?.枠?.width}, height=${s?.枠?.height}, top=${s?.枠?.top}, left=${s?.枠?.left}`);
 
     // iframe本体
     const iframe = document.createElement("iframe");
