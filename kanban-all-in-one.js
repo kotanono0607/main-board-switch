@@ -1,24 +1,3 @@
-/* ===============================================================
- * KANBAN ALL-IN-ONE SYSTEM
- * 統合バージョン - 全機能を1ファイルに集約
- *
- * このファイルは以下の10個のファイルを統合したものです：
- * 1. kanban-config.js - システム設定
- * 2. kanban-frame-single.js - UIフレーム生成
- * 3. kanban-labels-single.js - ラベル生成・ドラッグ機能
- * 4. pleasanter-api.js - テーブル45208 API
- * 5. pleasanter-api2.js - テーブル45173 API
- * 6. pleasanter-api3.js - テーブル121624 API
- * 7. pleasanter-update-api.js - レコード更新API
- * 8. kanban-menu.js - 画像選択メニュー
- * 9. kanban-drop-save.js - ドラッグ&ドロップ保存
- * 10. kanban-bootstrap.js - システム起動・初期化
- *
- * 使用方法：
- * <script src="kanban-all-in-one.js"></script>
- * <script>window.Kanban起動();</script>
- * ============================================================= */
-
 (function(window) {
   "use strict";
 
