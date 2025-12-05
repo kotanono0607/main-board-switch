@@ -29,6 +29,9 @@
 (function (w) {
   "use strict";
 
+  // ★ デバッグログ制御フラグ（問題特定時に不要なログを抑制）
+  const DEBUG_VERBOSE = false; // false: 最小限のログのみ, true: 全ログ出力
+
   w.Kanban設定 = {
     /* ----- 画面/動作設定 ----- */
     最大初期ラベル件数: 600,
@@ -103,9 +106,12 @@
       "インターネット接続セグメント":     { 背景: "#e8f7e8", 枠線: "#88cc88" }
     }
   };
+
+  // ★ デバッグフラグをグローバルに公開
+  w.DEBUG_VERBOSE = DEBUG_VERBOSE;
 })(window);
 
-console.log("✓ Kanban設定 初期化完了");
+if (window.DEBUG_VERBOSE) console.log("✓ Kanban設定 初期化完了");
 
 /* ===============================================================
  * 2. KANBAN-FRAME-SINGLE.JS
@@ -116,15 +122,16 @@ console.log("✓ Kanban設定 初期化完了");
 
   /* ========================= デバッグユーティリティ ========================= */
 
-  // 日本語コメント：デバッグフラグ（Kanban設定.デバッグ.有効 または window.KanbanFrameSingleDebug）
+  // 日本語コメント：デバッグフラグ（Kanban設定.デバッグ.有効 または window.KanbanFrameSingleDebug または window.DEBUG_VERBOSE）
   function デバッグ有効判定() {
     try {
       const s = w.Kanban設定 || {};
       if (s?.デバッグ?.有効 === true) return true;
       if (typeof w.KanbanFrameSingleDebug === "boolean") return w.KanbanFrameSingleDebug;
-      return true; // 既定でtrue：障害特定のため
+      if (typeof w.DEBUG_VERBOSE === "boolean") return w.DEBUG_VERBOSE;
+      return false; // 既定でfalse：問題特定時はログを最小限に
     } catch {
-      return true;
+      return false;
     }
   }
 
@@ -170,7 +177,7 @@ console.log("✓ Kanban設定 初期化完了");
 
   // 日本語コメント：左側（選択画像名＝所属名）のPC台数（台帳：45208）をカウント
   function 左側件数を数える(name) {
-    console.groupCollapsed?.("左側件数を数える(PC台数/45208)", { name });
+    if (window.DEBUG_VERBOSE) console.groupCollapsed?.("左側件数を数える(PC台数/45208)", { name });
     try {
       const s = w.Kanban設定 || {};
       const 固定右名 = (s?.固定右フレーム?.画像名) || "サーバー室";
@@ -192,18 +199,18 @@ console.log("✓ Kanban設定 初期化完了");
         }
       }
       dbg("PC台数カウント結果:", { name, cnt, 固定右名, 候補除外: [...set] });
-      console.groupEnd?.();
+      if (window.DEBUG_VERBOSE) console.groupEnd?.();
       return cnt;
     } catch (e) {
       err("左側件数を数える で例外:", e);
-      console.groupEnd?.();
+      if (window.DEBUG_VERBOSE) console.groupEnd?.();
       return 0;
     }
   }
 
   // 日本語コメント：右側（固定：サーバー室）のPC台数（台帳：45208）をカウント
   function 右側件数を数える() {
-    console.groupCollapsed?.("右側件数を数える(固定右/PC台数)");
+    if (window.DEBUG_VERBOSE) console.groupCollapsed?.("右側件数を数える(固定右/PC台数)");
     try {
       const s = w.Kanban設定 || {};
       const 固定右名 = (s?.固定右フレーム?.画像名) || "サーバー室";
@@ -214,11 +221,11 @@ console.log("✓ Kanban設定 初期化完了");
         if (String(安全にClassO(r)) === String(固定右名)) cnt++;
       }
       dbg("右側カウント結果:", { 固定右名, cnt, records: Array.isArray(recs) ? recs.length : "N/A" });
-      console.groupEnd?.();
+      if (window.DEBUG_VERBOSE) console.groupEnd?.();
       return cnt;
     } catch (e) {
       err("右側件数を数える で例外:", e);
-      console.groupEnd?.();
+      if (window.DEBUG_VERBOSE) console.groupEnd?.();
       return 0;
     }
   }
@@ -247,7 +254,7 @@ console.log("✓ Kanban設定 初期化完了");
 
   // 日本語コメント：所属ごとの内訳カウントを返す（常に3区分を返却）
   function テーブル別内訳カウント(左名) {
-    console.groupCollapsed?.("テーブル別内訳カウント(所属ごと)", { 左名 });
+    if (window.DEBUG_VERBOSE) console.groupCollapsed?.("テーブル別内訳カウント(所属ごと)", { 左名 });
     const s = w.Kanban設定 || {};
     const 固定右名 = (s?.固定右フレーム?.画像名) || "サーバー室";
     const 候補名セット = new Set((s.画像候補 || []).map(x => x?.名前).filter(Boolean));
@@ -278,7 +285,7 @@ console.log("✓ Kanban設定 初期化完了");
     }
 
     dbg("内訳カウント結果", { 台帳件数, 職員数件数, その他件数 });
-    console.groupEnd?.();
+    if (window.DEBUG_VERBOSE) console.groupEnd?.();
     return { 台帳件数, 職員数件数, その他件数 };
   }
 
@@ -469,14 +476,14 @@ function ラベル見た目スタイルを注入(targetDoc) {
     document.body.appendChild(上段);
 
     console.timeEnd?.("上段div作成時間");
-    console.groupEnd?.();
+    if (window.DEBUG_VERBOSE) console.groupEnd?.();
     return 上段;
   }
 
   // 日本語コメント：上段帯の文言を更新（左/右を個別に更新）
   function 上段帯を更新(上段El, s, 明示左名) {
-    console.groupCollapsed?.("上段帯を更新");
-    if (!上段El) { warn("上段El がありません"); console.groupEnd?.(); return; }
+    if (w.DEBUG_VERBOSE) if (window.DEBUG_VERBOSE) console.groupCollapsed?.("上段帯を更新");
+    if (!上段El) { warn("上段El がありません"); if (w.DEBUG_VERBOSE) if (window.DEBUG_VERBOSE) console.groupEnd?.(); return; }
 
     const 固定右名 = (s?.固定右フレーム?.画像名) || "サーバー室";
     let 左名 =
@@ -504,7 +511,7 @@ function ラベル見た目スタイルを注入(targetDoc) {
       }
 
       dbg("上段帯更新結果", { 左名: "未選択", 固定右名, 右件 });
-      console.groupEnd?.();
+      if (window.DEBUG_VERBOSE) console.groupEnd?.();
       return;
     }
 
@@ -548,14 +555,14 @@ function ラベル見た目スタイルを注入(targetDoc) {
     }
 
     dbg("上段帯更新結果", { 左名, 総数, counts, 固定右名, 右件 });
-    console.groupEnd?.();
+    if (window.DEBUG_VERBOSE) console.groupEnd?.();
   }
 
   /* ========================= 本体：フレーム生成 ========================= */
 
   function 初期化() {
     console.group?.("初期化");
-    console.time?.("初期化所要時間");
+    if (window.DEBUG_VERBOSE) console.time?.("初期化所要時間");
     const s = w.Kanban設定 || {};
     if (!w.Kanban設定) warn("Kanban設定 が未定義です（既定で進行）");
     else dbg("Kanban設定 読み込み", JSON.parse(JSON.stringify(s)));
@@ -586,6 +593,9 @@ function ラベル見た目スタイルを注入(targetDoc) {
       zIndex: 9999
     });
 
+    // ★ 枠サイズをログ出力（OS表示倍率の影響確認）
+    console.log(`[iframe枠] サイズ設定: width=${s?.枠?.width}, height=${s?.枠?.height}, top=${s?.枠?.top}, left=${s?.枠?.left}`);
+
     // iframe本体
     const iframe = document.createElement("iframe");
     Object.assign(iframe.style, {
@@ -598,10 +608,10 @@ function ラベル見た目スタイルを注入(targetDoc) {
     document.body.appendChild(枠);
 
     iframe.addEventListener("load", () => {
-      console.groupCollapsed?.("iframe load ハンドラ");
+      if (window.DEBUG_VERBOSE) console.groupCollapsed?.("iframe load ハンドラ");
       try {
         const doc = iframe.contentWindow?.document;
-        if (!doc) { err("iframe.contentWindow.document を取得できません"); console.groupEnd?.(); return; }
+        if (!doc) { err("iframe.contentWindow.document を取得できません"); if (window.DEBUG_VERBOSE) console.groupEnd?.(); return; }
 
         // スタイル（基礎スタイルのみ：ここでは"見た目上書き"を入れず、別styleで注入）
         const css = `
@@ -660,7 +670,13 @@ function ラベル見た目スタイルを注入(targetDoc) {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             const 右Rect = 右パネル.getBoundingClientRect();
-            console.log(`[iframeレイアウト確定] 右パネルサイズ: ${Math.round(右Rect.width)}x${Math.round(右Rect.height)}`);
+            const 左Rect = 左パネル.getBoundingClientRect();
+            const 包むRect = 包む.getBoundingClientRect();
+            const iframeRect = iframe.getBoundingClientRect();
+
+            console.log(`[iframeレイアウト確定] iframe実サイズ: ${Math.round(iframeRect.width)}x${Math.round(iframeRect.height)}`);
+            console.log(`[iframeレイアウト確定] 包むサイズ: ${Math.round(包むRect.width)}x${Math.round(包むRect.height)}`);
+            console.log(`[iframeレイアウト確定] 左パネル: ${Math.round(左Rect.width)}x${Math.round(左Rect.height)}, 右パネル: ${Math.round(右Rect.width)}x${Math.round(右Rect.height)}`);
 
             // コンテナサイズの妥当性チェック
             if (右Rect.width < 100) {
@@ -672,7 +688,7 @@ function ラベル見た目スタイルを注入(targetDoc) {
       } catch (e) {
         err("iframe load 中に例外:", e);
       } finally {
-        console.groupEnd?.();
+        if (window.DEBUG_VERBOSE) console.groupEnd?.();
       }
     });
 
@@ -707,8 +723,8 @@ function ラベル見た目スタイルを注入(targetDoc) {
       warn("_recordsCache 確認中に例外:", e);
     }
 
-    console.timeEnd?.("初期化所要時間");
-    console.groupEnd?.();
+    if (window.DEBUG_VERBOSE) console.timeEnd?.("初期化所要時間");
+    if (window.DEBUG_VERBOSE) console.groupEnd?.();
     return { iframe };
   }
 
@@ -728,7 +744,7 @@ function ラベル見た目スタイルを注入(targetDoc) {
 
         if (現在件数 !== 直前件数) {
           try {
-            console.log("[KanbanFrameSingle] _recordsCache 変化検知:", 直前件数, "→", 現在件数);
+            if (window.DEBUG_VERBOSE) console.log("[KanbanFrameSingle] _recordsCache 変化検知:", 直前件数, "→", 現在件数);
             上段帯を更新(上段El, s);
           } catch (e) {
             console.warn("[KanbanFrameSingle] 上段帯更新で例外:", e);
@@ -754,7 +770,7 @@ function ラベル見た目スタイルを注入(targetDoc) {
   dbg("スクリプト読込完了。初期化は KanbanFrameSingle.初期化() を呼び出してください。");
 })(window);
 
-console.log("✓ KanbanFrameSingle 初期化完了");
+if (window.DEBUG_VERBOSE) console.log("✓ KanbanFrameSingle 初期化完了");
 
 /* ===============================================================
  * 3. KANBAN-LABELS-SINGLE.JS
@@ -892,7 +908,7 @@ console.log("✓ KanbanFrameSingle 初期化完了");
   w.KanbanLabels = { ラベル作成 };
 })(window);
 
-console.log("✓ KanbanLabels 初期化完了");
+if (window.DEBUG_VERBOSE) console.log("✓ KanbanLabels 初期化完了");
 
 /* ===============================================================
  * 4. PLEASANTER-API.JS
@@ -991,7 +1007,7 @@ console.log("✓ KanbanLabels 初期化完了");
 
   /* ---------- 公開 ---------- */
   w.PleasanterApi = { レコード取得: レコード取得 };
-  console.log("✓ PleasanterApi 初期化完了（テーブル45208）");
+  if (window.DEBUG_VERBOSE) console.log("✓ PleasanterApi 初期化完了（テーブル45208）");
 })(window);
 
 /* ===============================================================
@@ -1050,7 +1066,7 @@ console.log("✓ KanbanLabels 初期化完了");
       var rows = ページ.rows, total = ページ.total, nextOffset = ページ.nextOffset;
       if (!rows.length) break;
       Array.prototype.push.apply(収集, rows);
-      console.log("ページ取得(45173): offset=" + ページ.currentOf + ", pageSize=" + ページ.pageSize + ", 収集=" + 収集.length + "/" + (total || "?"));
+      if (window.DEBUG_VERBOSE) console.log("ページ取得(45173): offset=" + ページ.currentOf + ", pageSize=" + ページ.pageSize + ", 収集=" + 収集.length + "/" + (total || "?"));
       if (total && nextOffset >= total) break;
       offset = nextOffset;
     }
@@ -1060,7 +1076,7 @@ console.log("✓ KanbanLabels 初期化完了");
 
   w.PleasanterApi別 = { レコード取得 };
 
-  console.log("✓ PleasanterApi別 初期化完了（テーブル45173）");
+  if (window.DEBUG_VERBOSE) console.log("✓ PleasanterApi別 初期化完了（テーブル45173）");
 })(window);
 
 /* ===============================================================
@@ -1119,7 +1135,7 @@ console.log("✓ KanbanLabels 初期化完了");
       var rows = ページ.rows, total = ページ.total, nextOffset = ページ.nextOffset;
       if (!rows.length) break;
       Array.prototype.push.apply(収集, rows);
-      console.log("ページ取得(121624): offset=" + ページ.currentOf + ", pageSize=" + ページ.pageSize + ", 収集=" + 収集.length + "/" + (total || "?"));
+      if (window.DEBUG_VERBOSE) console.log("ページ取得(121624): offset=" + ページ.currentOf + ", pageSize=" + ページ.pageSize + ", 収集=" + 収集.length + "/" + (total || "?"));
       if (total && nextOffset >= total) break;
       offset = nextOffset;
     }
@@ -1129,7 +1145,7 @@ console.log("✓ KanbanLabels 初期化完了");
 
   w.PleasanterApi_121624 = { レコード取得 };
 
-  console.log("✓ PleasanterApi_121624 初期化完了（テーブル121624）");
+  if (window.DEBUG_VERBOSE) console.log("✓ PleasanterApi_121624 初期化完了（テーブル121624）");
 })(window);
 
 /* ===============================================================
@@ -1204,7 +1220,7 @@ console.log("✓ KanbanLabels 初期化完了");
     ハッシュ更新
   };
 
-  console.log("✓ PleasanterUpdateApi 初期化完了");
+  if (window.DEBUG_VERBOSE) console.log("✓ PleasanterUpdateApi 初期化完了");
 })(window);
 
 /* ===============================================================
@@ -1332,7 +1348,7 @@ console.log("✓ KanbanLabels 初期化完了");
   });
 })(window);
 
-console.log("✓ KanbanMenu 初期化完了");
+if (window.DEBUG_VERBOSE) console.log("✓ KanbanMenu 初期化完了");
 
 /* ===============================================================
  * 9. KANBAN-DROP-SAVE.JS
@@ -1615,11 +1631,11 @@ console.log("✓ KanbanMenu 初期化完了");
     w.__kanbanDropSaveBound = true;
 
     w.addEventListener("kanban:drop", function (ev) {
-      console.log("▶ kanban:drop 捕捉 detail=", ev && ev.detail);
+      if (window.DEBUG_VERBOSE) console.log("▶ kanban:drop 捕捉 detail=", ev && ev.detail);
       Promise.resolve().then(() => 保存(ev && ev.detail || {}));
     });
 
-    console.log("▶ kanban-drop-save.js バインド完了");
+    if (window.DEBUG_VERBOSE) console.log("▶ kanban-drop-save.js バインド完了");
   }
 
   if (document.readyState === "loading") {
@@ -1632,7 +1648,7 @@ console.log("✓ KanbanMenu 初期化完了");
   }
 })(window);
 
-console.log("✓ KanbanDropSave 初期化完了");
+if (window.DEBUG_VERBOSE) console.log("✓ KanbanDropSave 初期化完了");
 
 /* ===============================================================
  * 10. KANBAN-BOOTSTRAP.JS
@@ -1643,8 +1659,8 @@ console.log("✓ KanbanDropSave 初期化完了");
 
   /* ========================= 設定 ========================= */
   const DEBUG = false;        // 全体デバッグ
-  const DEBUG色 = true;       // 色分け＆ClassHashデバッグ用
-  const DEBUG色45173J = true; // 45173の ClassJ=会計年度 監視ログ
+  const DEBUG色 = false;      // 色分け＆ClassHashデバッグ用（問題特定時はfalse）
+  const DEBUG色45173J = false; // 45173の ClassJ=会計年度 監視ログ（問題特定時はfalse）
 
   const 固定右名 = "サーバー室";
 
@@ -1690,7 +1706,7 @@ console.log("✓ KanbanDropSave 初期化完了");
     const tid = rec?._tableId;
     const ch = 取得_ClassHash(rec);
     const keys = Object.keys(ch || {});
-    console.log(`${prefix} ★debug ClassHash keys: ${tid}`, keys);
+    if (window.DEBUG_VERBOSE) console.log(`${prefix} ★debug ClassHash keys: ${tid}`, keys);
   }
 
   /* ========================= 所属名・ラベル名 ========================= */
@@ -1708,7 +1724,7 @@ console.log("✓ KanbanDropSave 初期化完了");
     const val = 正規化(raw);
 
     if (DEBUG) {
-      console.log(
+      if (window.DEBUG_VERBOSE) console.log(
         "所属名判定:",
         tid, "→", val, "(key:", key, ", raw:", raw, ", rawType:", typeof raw, ")"
       );
@@ -1725,7 +1741,7 @@ console.log("✓ KanbanDropSave 初期化完了");
       const raw = ch[key];
       const v   = 正規化(raw);
       if (DEBUG) {
-        console.log(
+        if (window.DEBUG_VERBOSE) console.log(
           "ラベル表示名(ClassHash):",
           tid, "→", v || `(fallback)`, "(key:", key, ", raw:", raw, ", rawType:", typeof raw, ")"
         );
@@ -1738,7 +1754,7 @@ console.log("✓ KanbanDropSave 初期化完了");
     const name = t ? String(t) : `ラベル${(i || 0) + 1}`;
 
     if (DEBUG && !key) {
-      console.log("ラベル表示名(従来候補):", tid, "→", name, "(raw: undefined )");
+      if (window.DEBUG_VERBOSE) console.log("ラベル表示名(従来候補):", tid, "→", name, "(raw: undefined )");
     }
     return name;
   }
@@ -1847,16 +1863,24 @@ console.log("✓ KanbanDropSave 初期化完了");
         // ★ 旧形式（ピクセル）：そのまま使用（後方互換性）
         x = storedX;
         y = storedY;
+        console.log(`[表示] 旧形式 id=${rec.ResultId || rec.IssueId}, panel=${panel}, stored=(${storedX}, ${storedY}) → panel=(${Math.round(x)}, ${Math.round(y)})`);
       } else if (w.パーセンテージからピクセル && storedX <= 100 && storedY <= 100) {
         // ★ 新形式（パーセンテージ）：画像サイズを基準にピクセルに変換
         const converted = w.パーセンテージからピクセル(storedX, storedY, imgDisplay.width, imgDisplay.height);
         // 画像相対座標にオフセットを加えてパネル相対座標に変換
         x = converted.pixelX + imgDisplay.offsetX;
         y = converted.pixelY + imgDisplay.offsetY;
+
+        // ★ デバッグログ：表示時の座標変換を詳細に出力
+        console.log(`[表示] パーセンテージ形式 id=${rec.ResultId || rec.IssueId}, panel=${panel}`);
+        console.log(`  stored=(${storedX}%, ${storedY}%) → 画像相対=(${Math.round(converted.pixelX)}, ${Math.round(converted.pixelY)})`);
+        console.log(`  offset=(${Math.round(imgDisplay.offsetX)}, ${Math.round(imgDisplay.offsetY)}) → panel相対=(${Math.round(x)}, ${Math.round(y)})`);
+        console.log(`  画像表示サイズ: ${Math.round(imgDisplay.width)}x${Math.round(imgDisplay.height)}, container: ${Math.round(pr.width)}x${Math.round(pr.height)}`);
       } else {
         // フォールバック：そのまま使用
         x = storedX;
         y = storedY;
+        console.log(`[表示] フォールバック id=${rec.ResultId || rec.IssueId}, panel=${panel}, stored=(${storedX}, ${storedY}) → panel=(${Math.round(x)}, ${Math.round(y)})`);
       }
 
       const layerX = x + offX;
@@ -2025,7 +2049,12 @@ console.log("✓ KanbanDropSave 初期化完了");
           // コンテナサイズを確認
           const 右Rect = ctx.右パネル.getBoundingClientRect();
           const 左Rect = ctx.左パネル.getBoundingClientRect();
-          console.log(`[初期化レイアウト確定] 左=${Math.round(左Rect.width)}x${Math.round(左Rect.height)}, 右=${Math.round(右Rect.width)}x${Math.round(右Rect.height)}`);
+          const 包むRect = ctx.包む.getBoundingClientRect();
+          const iframeRect = ctx.iframe.getBoundingClientRect();
+
+          console.log(`[初期化レイアウト確定] iframe実サイズ: ${Math.round(iframeRect.width)}x${Math.round(iframeRect.height)}`);
+          console.log(`[初期化レイアウト確定] 包むサイズ: ${Math.round(包むRect.width)}x${Math.round(包むRect.height)}`);
+          console.log(`[初期化レイアウト確定] 左パネル: ${Math.round(左Rect.width)}x${Math.round(左Rect.height)}, 右パネル: ${Math.round(右Rect.width)}x${Math.round(右Rect.height)}`);
 
           // コンテナサイズの妥当性チェック
           if (右Rect.width < 100 || 左Rect.width < 100) {
@@ -2046,7 +2075,7 @@ console.log("✓ KanbanDropSave 初期化完了");
     if (DEBUG) {
       const cnt = { 45208: 0, 45173: 0, 121624: 0 };
       records.forEach(r => { cnt[r._tableId] = (cnt[r._tableId] || 0) + 1; });
-      console.log("テーブル別件数:", cnt);
+      if (window.DEBUG_VERBOSE) console.log("テーブル別件数:", cnt);
     }
 
     // 左パネル：初期値がnullの場合は配置しない（メニュークリックまで待つ）
@@ -2056,12 +2085,12 @@ console.log("✓ KanbanDropSave 初期化完了");
         console.log(`[初期] 左(${左名_現在})=${左対象.length}, 右(${固定右名})=${右対象.length}`);
       }
       配置する(ctx, 左対象, "左");
-      console.log("配置完了: 左=", 左対象.length, "右=", 右対象.length);
+      if (window.DEBUG_VERBOSE) console.log("配置完了: 左=", 左対象.length, "右=", 右対象.length);
     } else {
       if (DEBUG) {
         console.log(`[初期] 左=未選択（表示なし）, 右(${固定右名})=${右対象.length}`);
       }
-      console.log("初期表示: 左パネルは空（メニューから選択してください）");
+      if (window.DEBUG_VERBOSE) console.log("初期表示: 左パネルは空（メニューから選択してください）");
     }
 
     // 右パネル：常に表示（サーバー室固定）
@@ -2106,22 +2135,24 @@ console.log("✓ KanbanDropSave 初期化完了");
   w.Kanban起動 = Kanban起動;
 })(window);
 
-console.log("✓ KanbanBootstrap 初期化完了");
+if (window.DEBUG_VERBOSE) console.log("✓ KanbanBootstrap 初期化完了");
 
 /* ===============================================================
  * 自動起動（メイン.txt の機能を統合）
  * ページ読み込み完了後、自動的にKanban起動を実行
  * ============================================================= */
-console.log("========================================");
-console.log("Kanban All-in-One システム読み込み完了");
-console.log("========================================");
+if (window.DEBUG_VERBOSE) {
+  console.log("========================================");
+  console.log("Kanban All-in-One システム読み込み完了");
+  console.log("========================================");
+}
 
 // 自動起動関数（メイン.txt の loadScriptsSequentially と同等の機能）
 (function 自動起動() {
   if (document.readyState === "loading") {
     // DOMがまだ読み込み中の場合は、DOMContentLoadedを待つ
     document.addEventListener("DOMContentLoaded", function 起動実行() {
-      console.log("▶ DOMContentLoaded: Kanban起動を開始します");
+      if (window.DEBUG_VERBOSE) console.log("▶ DOMContentLoaded: Kanban起動を開始します");
       setTimeout(() => {
         if (window.Kanban起動) {
           window.Kanban起動();
@@ -2143,6 +2174,6 @@ console.log("========================================");
   }
 })();
 
-console.log("✓ 自動起動設定完了（このファイルを読み込むだけで自動的に起動します）");
+if (window.DEBUG_VERBOSE) console.log("✓ 自動起動設定完了（このファイルを読み込むだけで自動的に起動します）");
 
 })(window);
