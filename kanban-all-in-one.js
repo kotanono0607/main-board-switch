@@ -654,6 +654,21 @@ function ラベル見た目スタイルを注入(targetDoc) {
         w.KanbanFrameSingle._ctx = { iframe, doc, 包む, レイヤ, 左パネル, 右パネル, 左画像, 右画像 };
         dbg("共有コンテキスト設定済み（_ctx）");
 
+        // ★ OS表示倍率対応：レイアウト確定を待つ
+        // iframeのload直後はグリッドレイアウトが確定していない可能性があるため、
+        // requestAnimationFrameで2フレーム待つことでレイアウト確定を保証する
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            const 右Rect = 右パネル.getBoundingClientRect();
+            console.log(`[iframeレイアウト確定] 右パネルサイズ: ${Math.round(右Rect.width)}x${Math.round(右Rect.height)}`);
+
+            // コンテナサイズの妥当性チェック
+            if (右Rect.width < 100) {
+              console.warn(`[iframeレイアウト] 右パネル幅が異常に小さい: ${Math.round(右Rect.width)}px（レイアウト未確定の可能性）`);
+            }
+          });
+        });
+
       } catch (e) {
         err("iframe load 中に例外:", e);
       } finally {
@@ -1439,6 +1454,13 @@ console.log("✓ KanbanMenu 初期化完了");
       return { width: img.naturalWidth, height: img.naturalHeight, offsetX: 0, offsetY: 0 };
     }
 
+    // ★ OS表示倍率125%問題：コンテナサイズが異常に小さい場合の警告
+    if (containerWidth < 100) {
+      console.error(`[画像サイズ計算] ⚠️ コンテナ幅が異常に小さい: ${Math.round(containerWidth)}px`);
+      console.error("[画像サイズ計算] → レイアウト未確定の可能性。座標計算が不正確になります。");
+      console.error("[画像サイズ計算] → OS表示倍率が100%以外の場合、この問題が発生しやすくなります。");
+    }
+
     const imgAspect = img.naturalWidth / img.naturalHeight;
     const containerAspect = containerWidth / containerHeight;
 
@@ -1984,6 +2006,35 @@ console.log("✓ KanbanDropSave 初期化完了");
       return w.KanbanFrameSingle._ctx;
     })();
     if (!ctx) { console.error("フレーム未準備"); return; }
+
+    // ★ OS表示倍率対応：画像ロード完了とレイアウト確定を待つ
+    // 右画像のロード完了を待つ（初期表示時に必須）
+    if (ctx.右画像) {
+      try {
+        await w.画像ロード待機(ctx.右画像);
+        console.log("[初期化] 右画像のロード完了");
+      } catch (err) {
+        console.warn("[初期化] 右画像のロード失敗:", err.message);
+      }
+    }
+
+    // レイアウト確定を待つ（requestAnimationFrameで2フレーム待機）
+    await new Promise(resolve => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // コンテナサイズを確認
+          const 右Rect = ctx.右パネル.getBoundingClientRect();
+          const 左Rect = ctx.左パネル.getBoundingClientRect();
+          console.log(`[初期化レイアウト確定] 左=${Math.round(左Rect.width)}x${Math.round(左Rect.height)}, 右=${Math.round(右Rect.width)}x${Math.round(右Rect.height)}`);
+
+          // コンテナサイズの妥当性チェック
+          if (右Rect.width < 100 || 左Rect.width < 100) {
+            console.warn(`[初期化] パネルサイズが異常に小さい可能性: 左=${Math.round(左Rect.width)}px, 右=${Math.round(右Rect.width)}px`);
+          }
+          resolve();
+        });
+      });
+    });
 
     // 初期の左右抽出
     const s = w.Kanban設定 || {};
