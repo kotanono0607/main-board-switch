@@ -586,6 +586,9 @@ function ラベル見た目スタイルを注入(targetDoc) {
       zIndex: 9999
     });
 
+    // ★ 枠サイズをログ出力（OS表示倍率の影響確認）
+    console.log(`[iframe枠] サイズ設定: width=${s?.枠?.width}, height=${s?.枠?.height}, top=${s?.枠?.top}, left=${s?.枠?.left}`);
+
     // iframe本体
     const iframe = document.createElement("iframe");
     Object.assign(iframe.style, {
@@ -660,7 +663,13 @@ function ラベル見た目スタイルを注入(targetDoc) {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             const 右Rect = 右パネル.getBoundingClientRect();
-            console.log(`[iframeレイアウト確定] 右パネルサイズ: ${Math.round(右Rect.width)}x${Math.round(右Rect.height)}`);
+            const 左Rect = 左パネル.getBoundingClientRect();
+            const 包むRect = 包む.getBoundingClientRect();
+            const iframeRect = iframe.getBoundingClientRect();
+
+            console.log(`[iframeレイアウト確定] iframe実サイズ: ${Math.round(iframeRect.width)}x${Math.round(iframeRect.height)}`);
+            console.log(`[iframeレイアウト確定] 包むサイズ: ${Math.round(包むRect.width)}x${Math.round(包むRect.height)}`);
+            console.log(`[iframeレイアウト確定] 左パネル: ${Math.round(左Rect.width)}x${Math.round(左Rect.height)}, 右パネル: ${Math.round(右Rect.width)}x${Math.round(右Rect.height)}`);
 
             // コンテナサイズの妥当性チェック
             if (右Rect.width < 100) {
@@ -1847,16 +1856,24 @@ console.log("✓ KanbanDropSave 初期化完了");
         // ★ 旧形式（ピクセル）：そのまま使用（後方互換性）
         x = storedX;
         y = storedY;
+        console.log(`[表示] 旧形式 id=${rec.ResultId || rec.IssueId}, panel=${panel}, stored=(${storedX}, ${storedY}) → panel=(${Math.round(x)}, ${Math.round(y)})`);
       } else if (w.パーセンテージからピクセル && storedX <= 100 && storedY <= 100) {
         // ★ 新形式（パーセンテージ）：画像サイズを基準にピクセルに変換
         const converted = w.パーセンテージからピクセル(storedX, storedY, imgDisplay.width, imgDisplay.height);
         // 画像相対座標にオフセットを加えてパネル相対座標に変換
         x = converted.pixelX + imgDisplay.offsetX;
         y = converted.pixelY + imgDisplay.offsetY;
+
+        // ★ デバッグログ：表示時の座標変換を詳細に出力
+        console.log(`[表示] パーセンテージ形式 id=${rec.ResultId || rec.IssueId}, panel=${panel}`);
+        console.log(`  stored=(${storedX}%, ${storedY}%) → 画像相対=(${Math.round(converted.pixelX)}, ${Math.round(converted.pixelY)})`);
+        console.log(`  offset=(${Math.round(imgDisplay.offsetX)}, ${Math.round(imgDisplay.offsetY)}) → panel相対=(${Math.round(x)}, ${Math.round(y)})`);
+        console.log(`  画像表示サイズ: ${Math.round(imgDisplay.width)}x${Math.round(imgDisplay.height)}, container: ${Math.round(pr.width)}x${Math.round(pr.height)}`);
       } else {
         // フォールバック：そのまま使用
         x = storedX;
         y = storedY;
+        console.log(`[表示] フォールバック id=${rec.ResultId || rec.IssueId}, panel=${panel}, stored=(${storedX}, ${storedY}) → panel=(${Math.round(x)}, ${Math.round(y)})`);
       }
 
       const layerX = x + offX;
@@ -2025,7 +2042,12 @@ console.log("✓ KanbanDropSave 初期化完了");
           // コンテナサイズを確認
           const 右Rect = ctx.右パネル.getBoundingClientRect();
           const 左Rect = ctx.左パネル.getBoundingClientRect();
-          console.log(`[初期化レイアウト確定] 左=${Math.round(左Rect.width)}x${Math.round(左Rect.height)}, 右=${Math.round(右Rect.width)}x${Math.round(右Rect.height)}`);
+          const 包むRect = ctx.包む.getBoundingClientRect();
+          const iframeRect = ctx.iframe.getBoundingClientRect();
+
+          console.log(`[初期化レイアウト確定] iframe実サイズ: ${Math.round(iframeRect.width)}x${Math.round(iframeRect.height)}`);
+          console.log(`[初期化レイアウト確定] 包むサイズ: ${Math.round(包むRect.width)}x${Math.round(包むRect.height)}`);
+          console.log(`[初期化レイアウト確定] 左パネル: ${Math.round(左Rect.width)}x${Math.round(左Rect.height)}, 右パネル: ${Math.round(右Rect.width)}x${Math.round(右Rect.height)}`);
 
           // コンテナサイズの妥当性チェック
           if (右Rect.width < 100 || 左Rect.width < 100) {
