@@ -566,17 +566,16 @@ function ラベル見た目スタイルを注入(targetDoc) {
     // 初期表示（キャッシュがまだ無くても暫定表示）
     上段帯を更新(上段El, s);
 
-    // ★ OS表示倍率対応：DPRを取得して、実際のiframeサイズを計算
+    // ★ OS表示倍率対応：CSS Transform Scaleで実装
+    // iframe内部の座標系を常に固定（950x700）し、表示時にスケーリング
     const dpr = window.devicePixelRatio || 1;
     const baseWidth = s?.枠?.baseWidth || s?.枠?.width || 950;
     const baseHeight = s?.枠?.baseHeight || s?.枠?.height || 700;
 
-    // DPRで割ることで、すべてのOS表示倍率で同じ表示サイズになる
-    // 例：OS表示倍率125%（DPR=1.25）の場合、950/1.25=760px で設定され、表示サイズは950pxになる
-    const actualWidth = Math.round(baseWidth / dpr);
-    const actualHeight = Math.round(baseHeight / dpr);
+    // スケール係数を計算（OS表示倍率125%なら0.8）
+    const scale = 1 / dpr;
 
-    console.log(`[iframe枠] DPR=${dpr.toFixed(2)}, 基準サイズ=${baseWidth}x${baseHeight}, 実サイズ=${actualWidth}x${actualHeight}`);
+    console.log(`[iframe枠] DPR=${dpr.toFixed(2)}, 基準サイズ=${baseWidth}x${baseHeight}, スケール=${scale.toFixed(3)}`);
 
     // 親ページ側の外枠
     const 枠 = document.createElement("div");
@@ -584,12 +583,15 @@ function ラベル見た目スタイルを注入(targetDoc) {
       position: "absolute",
       top:  s?.枠?.top,
       left: s?.枠?.left,
-      width: actualWidth + "px",
-      height: actualHeight + "px",
+      width: baseWidth + "px",        // 常に基準サイズ
+      height: baseHeight + "px",      // 常に基準サイズ
       background: "#fff",
       border: "1px solid #ccc",
       borderRadius: "8px",
-      zIndex: 9999
+      zIndex: 9999,
+      // ★ DPR > 1の場合、transform: scaleで縮小
+      transform: dpr > 1 ? `scale(${scale})` : "none",
+      transformOrigin: "top left"     // 左上を基準に縮小
     });
 
     // iframe本体
