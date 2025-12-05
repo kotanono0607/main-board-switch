@@ -1274,7 +1274,16 @@ console.log("✓ KanbanLabels 初期化完了");
           if ((item.名前 || "") === 固定名) return; // 念のためガード
 
           // 左画像だけ差し替え
-          if (ctx.左画像) ctx.左画像.src = item.url;
+          if (ctx.左画像) {
+            ctx.左画像.src = item.url;
+            // 画像ロード完了を待つ
+            try {
+              await w.画像ロード待機(ctx.左画像);
+              console.log("[画像切替] 左画像のロード完了:", item.url);
+            } catch (err) {
+              console.warn("[画像切替] 左画像のロード失敗:", err.message);
+            }
+          }
           save(item.url);
 
           // アクティブ更新
@@ -1293,7 +1302,17 @@ console.log("✓ KanbanLabels 初期化完了");
 
     // 復元（左画像へ適用）
     if (last && last !== s.画像URL) {
-      const ctx = await フレーム準備を待つ(); if (ctx?.左画像) ctx.左画像.src = last;
+      const ctx = await フレーム準備を待つ();
+      if (ctx?.左画像) {
+        ctx.左画像.src = last;
+        // 画像ロード完了を待つ
+        try {
+          await w.画像ロード待機(ctx.左画像);
+          console.log("[画像復元] 左画像のロード完了:", last);
+        } catch (err) {
+          console.warn("[画像復元] 左画像のロード失敗:", err.message);
+        }
+      }
     }
   });
 })(window);
@@ -1319,9 +1338,19 @@ console.log("✓ KanbanMenu 初期化完了");
     }
     const percentX = (pixelX / panelWidth) * 100;
     const percentY = (pixelY / panelHeight) * 100;
+
+    // パーセンテージを0-100の範囲に制限（ラベルが画像外に配置されるのを防ぐ）
+    const clampedX = Math.max(0, Math.min(100, Math.round(percentX)));
+    const clampedY = Math.max(0, Math.min(100, Math.round(percentY)));
+
+    // 範囲外の場合は警告
+    if (clampedX !== Math.round(percentX) || clampedY !== Math.round(percentY)) {
+      console.warn(`[座標変換] パーセンテージが範囲外です: (${Math.round(percentX)}, ${Math.round(percentY)}) → (${clampedX}, ${clampedY}) に制限`);
+    }
+
     return {
-      percentX: Math.round(percentX),  // 整数値（0-100）サーバーエラー回避
-      percentY: Math.round(percentY)
+      percentX: clampedX,  // 整数値（0-100）サーバーエラー回避
+      percentY: clampedY
     };
   }
 
@@ -1355,10 +1384,59 @@ console.log("✓ KanbanMenu 初期化完了");
    * @param {number} containerHeight - コンテナの高さ
    * @returns {{width: number, height: number, offsetX: number, offsetY: number}}
    */
+  // 画像ロード完了を待つヘルパー関数
+  function 画像ロード待機(img) {
+    if (!img) return Promise.reject(new Error("画像要素がnullです"));
+    if (img.complete && img.naturalWidth > 0) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error("画像ロードタイムアウト（10秒）"));
+      }, 10000);
+
+      img.addEventListener('load', () => {
+        clearTimeout(timeout);
+        resolve();
+      }, { once: true });
+
+      img.addEventListener('error', () => {
+        clearTimeout(timeout);
+        reject(new Error("画像ロードエラー"));
+      }, { once: true });
+    });
+  }
+
+  w.画像ロード待機 = 画像ロード待機;
+
   function 画像の実表示サイズを取得(img, containerWidth, containerHeight) {
-    if (!img || !img.naturalWidth || !img.naturalHeight) {
-      console.warn("画像情報が取得できません", { img, naturalWidth: img?.naturalWidth, naturalHeight: img?.naturalHeight });
+    // より厳密な画像ロードチェック
+    if (!img) {
+      console.warn("[画像サイズ計算] 画像要素がnullです");
       return { width: containerWidth, height: containerHeight, offsetX: 0, offsetY: 0 };
+    }
+
+    if (!img.complete) {
+      console.warn("[画像サイズ計算] 画像がまだロードされていません (complete=false)");
+      return { width: containerWidth, height: containerHeight, offsetX: 0, offsetY: 0 };
+    }
+
+    if (!img.naturalWidth || !img.naturalHeight) {
+      console.warn("[画像サイズ計算] 画像のnaturalサイズが取得できません", {
+        naturalWidth: img.naturalWidth,
+        naturalHeight: img.naturalHeight
+      });
+      return { width: containerWidth, height: containerHeight, offsetX: 0, offsetY: 0 };
+    }
+
+    // デバイスピクセル比とコンテナサイズをログ出力
+    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+    console.log(`[画像サイズ計算] DPR=${dpr.toFixed(2)}, natural=${img.naturalWidth}x${img.naturalHeight}, container=${Math.round(containerWidth)}x${Math.round(containerHeight)}`);
+
+    // ゼロ除算対策を追加
+    if (containerWidth <= 0 || containerHeight <= 0) {
+      console.warn("[画像サイズ計算] コンテナサイズが不正です", { containerWidth, containerHeight });
+      return { width: img.naturalWidth, height: img.naturalHeight, offsetX: 0, offsetY: 0 };
     }
 
     const imgAspect = img.naturalWidth / img.naturalHeight;
@@ -1379,6 +1457,8 @@ console.log("✓ KanbanMenu 初期化完了");
       offsetX = (containerWidth - displayWidth) / 2;
       offsetY = 0;
     }
+
+    console.log(`[画像サイズ計算] display=${Math.round(displayWidth)}x${Math.round(displayHeight)}, offset=(${Math.round(offsetX)}, ${Math.round(offsetY)}), aspect=${imgAspect.toFixed(3)} vs ${containerAspect.toFixed(3)}`);
 
     return {
       width: displayWidth,
