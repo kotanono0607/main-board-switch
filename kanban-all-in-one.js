@@ -1240,7 +1240,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanLabels 初期化完了");
   function メニュースタイル(el) {
     el.style.position = "absolute";
     el.style.background = "#fff";
-    el.style.border = "1px solid #ccc";
+    el.style.border = "3px solid red";
     el.style.borderRadius = "8px";
     el.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)";
     el.style.padding = "8px";
