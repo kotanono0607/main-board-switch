@@ -386,7 +386,7 @@ function ラベル見た目スタイルを注入(targetDoc) {
   /* ========================= 上段帯（外側）の生成＆更新 ========================= */
 
   // 日本語コメント：上段帯DOMを作成（親ドキュメント側・iframeの"外"）
-  function 上段divを追加(s) {
+  function 上段divを追加(s, container) {
     console.group?.("上段divを追加");
     console.time?.("上段div作成時間");
 
@@ -466,8 +466,8 @@ function ラベル見た目スタイルを注入(targetDoc) {
     右.id = "kanban-上段帯-右";
     上段.appendChild(右);
 
-    if (!document.body) warn("document.body が未準備の可能性");
-    document.body.appendChild(上段);
+    if (!container && !document.body) warn("container も document.body も未準備の可能性");
+    (container || document.body).appendChild(上段);
 
     console.timeEnd?.("上段div作成時間");
     if (window.DEBUG_VERBOSE) console.groupEnd?.();
@@ -554,7 +554,7 @@ function ラベル見た目スタイルを注入(targetDoc) {
 
   /* ========================= 本体：フレーム生成 ========================= */
 
-  function 初期化() {
+  function 初期化(container) {
     console.group?.("初期化");
     if (window.DEBUG_VERBOSE) console.time?.("初期化所要時間");
     const s = w.Kanban設定 || {};
@@ -562,7 +562,7 @@ function ラベル見た目スタイルを注入(targetDoc) {
     else dbg("Kanban設定 読み込み", JSON.parse(JSON.stringify(s)));
 
     // ★ 親ページ側に上段divを先に追加（iframe外）
-    const 上段El = 上段divを追加(s);
+    const 上段El = 上段divを追加(s, container);
 
     // 親ドキュメント側にも念のため見た目上書きを注入（#layer/.ラベルレイヤ が存在する場合のみ影響）
     try {
@@ -610,7 +610,7 @@ function ラベル見た目スタイルを注入(targetDoc) {
       borderRadius: "8px"
     });
     枠.appendChild(iframe);
-    document.body.appendChild(枠);
+    (container || document.body).appendChild(枠);
 
     iframe.addEventListener("load", () => {
       if (window.DEBUG_VERBOSE) console.groupCollapsed?.("iframe load ハンドラ");
@@ -1276,7 +1276,8 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanLabels 初期化完了");
   const save = url => { try { localStorage.setItem(KEY, url); } catch {} };
   const load = () => { try { return localStorage.getItem(KEY) || ""; } catch { return ""; } };
 
-  window.addEventListener("load", async () => {
+  // 画像メニュー生成関数（タブマネージャー対応）
+  async function 画像メニュー生成(container) {
     const s = w.Kanban設定; if (!s) return;
 
     const 固定名 = s?.固定右フレーム?.画像名 || "サーバー室";
@@ -1334,7 +1335,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanLabels 初期化完了");
         メニュー.appendChild(btn);
       });
 
-    document.body.appendChild(メニュー);
+    (container || document.body).appendChild(メニュー);
 
     // 復元（左画像へ適用）
     if (last && last !== s.画像URL) {
@@ -1350,7 +1351,10 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanLabels 初期化完了");
         }
       }
     }
-  });
+  }
+
+  // 公開API
+  w.画像メニュー生成 = 画像メニュー生成;
 })(window);
 
 if (window.DEBUG_VERBOSE) console.log("✓ KanbanMenu 初期化完了");
@@ -1987,7 +1991,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanDropSave 初期化完了");
 
   /* ========================= 起動 ========================= */
 
-  async function Kanban起動() {
+  async function Kanban起動(container) {
     if (!w.KanbanFrameSingle || !w.PleasanterApi || !w.PleasanterApi別 || !w.PleasanterApi_121624) {
       console.error("依存スクリプト未読込（KanbanFrameSingle / PleasanterApi / PleasanterApi別 / PleasanterApi_121624）");
       return;
@@ -2000,8 +2004,13 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanDropSave 初期化完了");
       }
     } catch {}
 
-    // 単一iframe生成
-    w.KanbanFrameSingle.初期化();
+    // 単一iframe生成（タブマネージャーのコンテナ内に配置）
+    w.KanbanFrameSingle.初期化(container);
+
+    // 画像メニュー生成（タブマネージャーのコンテナ内に配置）
+    if (w.画像メニュー生成) {
+      await w.画像メニュー生成(container);
+    }
 
     // 3テーブル取得
     let recs1 = [], recs2 = [], recs3 = [];
@@ -2342,7 +2351,7 @@ if (window.DEBUG_VERBOSE) {
         // 現在の画像カンバン機能を実行
         console.log("[TabManager] 画像カンバンパネルを初期化中...");
         if (window.Kanban起動) {
-          window.Kanban起動();
+          window.Kanban起動(container);
         } else {
           console.error("Kanban起動 関数が見つかりません");
         }
