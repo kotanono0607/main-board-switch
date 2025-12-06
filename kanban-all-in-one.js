@@ -1240,7 +1240,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanLabels 初期化完了");
   function メニュースタイル(el) {
     el.style.position = "absolute";
     el.style.background = "#fff";
-    el.style.border = "3px solid red";
+    el.style.border = "3px solid green";
     el.style.borderRadius = "8px";
     el.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)";
     el.style.padding = "8px";
@@ -1281,7 +1281,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanLabels 初期化完了");
     const メニュー = document.createElement("div");
     メニュースタイル(メニュー);
     メニュー.style.top = topPx;
-    メニュー.style.left = Math.max(10, frameLeft - (menuWidth + 20)) + "px";
+    メニュー.style.left = "500px";
     メニュー.style.width = menuWidth + "px";
 
     const 見出し = document.createElement("div");
