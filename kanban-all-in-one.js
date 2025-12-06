@@ -1280,7 +1280,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanLabels 初期化完了");
 
     const メニュー = document.createElement("div");
     メニュースタイル(メニュー);
-    メニュー.style.top = "50px";
+    メニュー.style.top = "60px";
     メニュー.style.left = "500px";
     メニュー.style.width = menuWidth + "px";
 
