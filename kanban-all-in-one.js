@@ -31,7 +31,7 @@
     // 実際のiframeサイズは、DPR（デバイスピクセル比）で自動調整される
     // 例：OS表示倍率125%（DPR=1.25）の場合、width: 950/1.25=760px で設定され、表示サイズは950pxになる
     枠: {
-      top: "0px",
+      top: "100px",
       left: "720px",
       baseWidth: 950,   // 基準幅（OS表示倍率100%での表示サイズ）
       baseHeight: 700   // 基準高さ（OS表示倍率100%での表示サイズ）
@@ -1280,7 +1280,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanLabels 初期化完了");
 
     const メニュー = document.createElement("div");
     メニュースタイル(メニュー);
-    メニュー.style.top = topPx;
+    メニュー.style.top = "50px";
     メニュー.style.left = "500px";
     メニュー.style.width = menuWidth + "px";
 
