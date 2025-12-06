@@ -32,7 +32,7 @@
     // 例：OS表示倍率125%（DPR=1.25）の場合、width: 950/1.25=760px で設定され、表示サイズは950pxになる
     枠: {
       top: "100px",
-      left: "720px",
+      left: "700px",
       baseWidth: 950,   // 基準幅（OS表示倍率100%での表示サイズ）
       baseHeight: 700   // 基準高さ（OS表示倍率100%での表示サイズ）
     },
@@ -391,7 +391,7 @@ function ラベル見た目スタイルを注入(targetDoc) {
     console.time?.("上段div作成時間");
 
     const 枠Top  = px数値(s?.枠?.top,   10);
-    const 余白px = px数値(s?.上段帯?.上余白px, 6);
+    const 余白px = px数値(s?.上段帯?.上余白px, 0);
     const 高さpx = px数値(s?.上段帯?.高さpx, 36);
     const 計算Top = Math.max(0, 枠Top - 高さpx - 余白px);
 
@@ -415,7 +415,7 @@ function ラベル見た目スタイルを注入(targetDoc) {
       position: "absolute",
       top:  `${計算Top}px`,
       left: s?.枠?.left || "10px",
-      width: s?.枠?.width || "800px",
+      width: (s?.枠?.baseWidth || s?.枠?.width || 950) + "px",
       height: `${高さpx}px`,
       display: "grid",
       gridTemplateColumns: `${左列幅} ${右幅文字列}`,
@@ -1280,7 +1280,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanLabels 初期化完了");
 
     const メニュー = document.createElement("div");
     メニュースタイル(メニュー);
-    メニュー.style.top = "60px";
+    メニュー.style.top = "64px";
     メニュー.style.left = "500px";
     メニュー.style.width = menuWidth + "px";
 
