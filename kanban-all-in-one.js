@@ -412,14 +412,10 @@ function ラベル見た目スタイルを注入(targetDoc) {
     const dpr = window.devicePixelRatio || 1;
     const scale = 1 / dpr;
 
-    // ★ コンテナ内の相対座標に変換（コンテナ基準: left 500px, top 74px）
-    const コンテナ基準Left = 500;
-    const コンテナ基準Top = 74;
+    // ★ 黄色枠を基準（0px）に設定
     const 枠Left = parseInt(String(s?.枠?.left || "700"), 10);
-    const 相対Left = container ? 枠Left - コンテナ基準Left : 枠Left;
-    // ★ transform: scaleによる高さ縮小を考慮して位置を調整
-    const scale調整px = (dpr > 1 && container) ? 高さpx * (1 - scale) : 0;
-    const 相対Top = container ? 計算Top - コンテナ基準Top + scale調整px : 計算Top;
+    const 相対Left = container ? 枠Left - 500 : 枠Left;
+    const 相対Top = container ? 0 : 計算Top;  // コンテナ内では常に 0px
 
     dbg("上段帯パラメータ", { 枠Top, 余白px, 高さpx, 計算Top, 相対Top, 相対Left, 左列幅, 右幅文字列, 線色, 線太さ, 文字色, 背景色, dpr, scale });
 
@@ -591,9 +587,9 @@ function ラベル見た目スタイルを注入(targetDoc) {
     // スケール係数を計算（OS表示倍率125%なら0.8）
     const scale = 1 / dpr;
 
-    // ★ コンテナ内の相対座標に変換（コンテナ基準: left 500px, top 74px）
+    // ★ コンテナ内の相対座標に変換（コンテナ基準: left 500px, top 64px）
     const コンテナ基準Left = 500;
-    const コンテナ基準Top = 74;
+    const コンテナ基準Top = 64;
     const 枠Left = parseInt(String(s?.枠?.left || "700"), 10);
     const 枠Top = parseInt(String(s?.枠?.top || "100"), 10);
     const 相対Left = container ? 枠Left - コンテナ基準Left : 枠Left;
@@ -2189,7 +2185,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanBootstrap 初期化完了");
     const tabBar = document.createElement("div");
     Object.assign(tabBar.style, {
       position: "absolute",
-      top: "34px",
+      top: "24px",
       left: "500px",
       width: "1150px",  // 緑200px + 黄色950px
       height: "40px",
@@ -2251,7 +2247,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanBootstrap 初期化完了");
     const wrapper = document.createElement("div");
     Object.assign(wrapper.style, {
       position: "absolute",
-      top: "74px",  // タブバーの下（余白なし）
+      top: "64px",  // タブバーの下（黄色枠の絶対位置）
       left: "500px",
       zIndex: 9998
     });
