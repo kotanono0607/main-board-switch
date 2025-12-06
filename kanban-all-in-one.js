@@ -412,13 +412,20 @@ function ラベル見た目スタイルを注入(targetDoc) {
     const dpr = window.devicePixelRatio || 1;
     const scale = 1 / dpr;
 
-    dbg("上段帯パラメータ", { 枠Top, 余白px, 高さpx, 計算Top, 左列幅, 右幅文字列, 線色, 線太さ, 文字色, 背景色, dpr, scale });
+    // ★ コンテナ内の相対座標に変換（コンテナ基準: left 500px, top 64px）
+    const コンテナ基準Left = 500;
+    const コンテナ基準Top = 64;
+    const 枠Left = parseInt(String(s?.枠?.left || "700"), 10);
+    const 相対Left = container ? 枠Left - コンテナ基準Left : 枠Left;
+    const 相対Top = container ? 計算Top - コンテナ基準Top : 計算Top;
+
+    dbg("上段帯パラメータ", { 枠Top, 余白px, 高さpx, 計算Top, 相対Top, 相対Left, 左列幅, 右幅文字列, 線色, 線太さ, 文字色, 背景色, dpr, scale });
 
     const 上段 = document.createElement("div");
     Object.assign(上段.style, {
       position: "absolute",
-      top:  `${計算Top}px`,
-      left: s?.枠?.left || "10px",
+      top:  `${相対Top}px`,
+      left: `${相対Left}px`,
       width: (s?.枠?.baseWidth || s?.枠?.width || 950) + "px",
       height: `${高さpx}px`,
       display: "grid",
@@ -582,14 +589,22 @@ function ラベル見た目スタイルを注入(targetDoc) {
     // スケール係数を計算（OS表示倍率125%なら0.8）
     const scale = 1 / dpr;
 
-    console.log(`[iframe枠] DPR=${dpr.toFixed(2)}, 基準サイズ=${baseWidth}x${baseHeight}, スケール=${scale.toFixed(3)}`);
+    // ★ コンテナ内の相対座標に変換（コンテナ基準: left 500px, top 64px）
+    const コンテナ基準Left = 500;
+    const コンテナ基準Top = 64;
+    const 枠Left = parseInt(String(s?.枠?.left || "700"), 10);
+    const 枠Top = parseInt(String(s?.枠?.top || "100"), 10);
+    const 相対Left = container ? 枠Left - コンテナ基準Left : 枠Left;
+    const 相対Top = container ? 枠Top - コンテナ基準Top : 枠Top;
+
+    console.log(`[iframe枠] DPR=${dpr.toFixed(2)}, 基準サイズ=${baseWidth}x${baseHeight}, スケール=${scale.toFixed(3)}, 相対座標=(${相対Left}, ${相対Top})`);
 
     // 親ページ側の外枠
     const 枠 = document.createElement("div");
     Object.assign(枠.style, {
       position: "absolute",
-      top:  s?.枠?.top,
-      left: s?.枠?.left,
+      top:  `${相対Top}px`,
+      left: `${相対Left}px`,
       width: baseWidth + "px",        // 常に基準サイズ
       height: baseHeight + "px",      // 常に基準サイズ
       background: "#fff",
@@ -1288,8 +1303,9 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanLabels 初期化完了");
 
     const メニュー = document.createElement("div");
     メニュースタイル(メニュー);
-    メニュー.style.top = "64px";
-    メニュー.style.left = "500px";
+    // コンテナ内の相対座標（コンテナ基準: left 500px, top 64px）
+    メニュー.style.top = "0px";
+    メニュー.style.left = "0px";
     メニュー.style.width = menuWidth + "px";
 
     const 見出し = document.createElement("div");
