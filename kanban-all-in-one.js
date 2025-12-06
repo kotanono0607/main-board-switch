@@ -586,7 +586,7 @@ function ラベル見た目スタイルを注入(targetDoc) {
       width: baseWidth + "px",        // 常に基準サイズ
       height: baseHeight + "px",      // 常に基準サイズ
       background: "#fff",
-      border: "1px solid #ccc",
+      border: "3px solid blue",
       borderRadius: "8px",
       zIndex: 9999,
       // ★ DPR > 1の場合、transform: scaleで縮小
