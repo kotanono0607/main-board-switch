@@ -417,7 +417,9 @@ function ラベル見た目スタイルを注入(targetDoc) {
     const コンテナ基準Top = 74;
     const 枠Left = parseInt(String(s?.枠?.left || "700"), 10);
     const 相対Left = container ? 枠Left - コンテナ基準Left : 枠Left;
-    const 相対Top = container ? 計算Top - コンテナ基準Top : 計算Top;
+    // ★ transform: scaleによる高さ縮小を考慮して位置を調整
+    const scale調整px = (dpr > 1 && container) ? 高さpx * (1 - scale) : 0;
+    const 相対Top = container ? 計算Top - コンテナ基準Top + scale調整px : 計算Top;
 
     dbg("上段帯パラメータ", { 枠Top, 余白px, 高さpx, 計算Top, 相対Top, 相対Left, 左列幅, 右幅文字列, 線色, 線太さ, 文字色, 背景色, dpr, scale });
 
