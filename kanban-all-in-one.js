@@ -412,9 +412,9 @@ function ラベル見た目スタイルを注入(targetDoc) {
     const dpr = window.devicePixelRatio || 1;
     const scale = 1 / dpr;
 
-    // ★ コンテナ内の相対座標に変換（コンテナ基準: left 500px, top 64px）
+    // ★ コンテナ内の相対座標に変換（コンテナ基準: left 500px, top 74px）
     const コンテナ基準Left = 500;
-    const コンテナ基準Top = 64;
+    const コンテナ基準Top = 74;
     const 枠Left = parseInt(String(s?.枠?.left || "700"), 10);
     const 相対Left = container ? 枠Left - コンテナ基準Left : 枠Left;
     const 相対Top = container ? 計算Top - コンテナ基準Top : 計算Top;
@@ -589,9 +589,9 @@ function ラベル見た目スタイルを注入(targetDoc) {
     // スケール係数を計算（OS表示倍率125%なら0.8）
     const scale = 1 / dpr;
 
-    // ★ コンテナ内の相対座標に変換（コンテナ基準: left 500px, top 64px）
+    // ★ コンテナ内の相対座標に変換（コンテナ基準: left 500px, top 74px）
     const コンテナ基準Left = 500;
-    const コンテナ基準Top = 64;
+    const コンテナ基準Top = 74;
     const 枠Left = parseInt(String(s?.枠?.left || "700"), 10);
     const 枠Top = parseInt(String(s?.枠?.top || "100"), 10);
     const 相対Left = container ? 枠Left - コンテナ基準Left : 枠Left;
@@ -2187,7 +2187,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanBootstrap 初期化完了");
     const tabBar = document.createElement("div");
     Object.assign(tabBar.style, {
       position: "absolute",
-      top: "20px",
+      top: "34px",
       left: "500px",
       width: "1150px",  // 緑200px + 黄色950px
       height: "40px",
@@ -2249,7 +2249,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanBootstrap 初期化完了");
     const wrapper = document.createElement("div");
     Object.assign(wrapper.style, {
       position: "absolute",
-      top: "64px",  // タブバーの下
+      top: "74px",  // タブバーの下（余白なし）
       left: "500px",
       zIndex: 9998
     });
