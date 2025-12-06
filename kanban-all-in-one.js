@@ -408,7 +408,11 @@ function ラベル見た目スタイルを注入(targetDoc) {
     const 文字色 = (s?.上段帯?.文字色 || "#333");
     const 背景色 = (s?.上段帯?.背景色 || "#fff");
 
-    dbg("上段帯パラメータ", { 枠Top, 余白px, 高さpx, 計算Top, 左列幅, 右幅文字列, 線色, 線太さ, 文字色, 背景色 });
+    // ★ OS表示倍率対応：青枠と同じスケール処理を適用
+    const dpr = window.devicePixelRatio || 1;
+    const scale = 1 / dpr;
+
+    dbg("上段帯パラメータ", { 枠Top, 余白px, 高さpx, 計算Top, 左列幅, 右幅文字列, 線色, 線太さ, 文字色, 背景色, dpr, scale });
 
     const 上段 = document.createElement("div");
     Object.assign(上段.style, {
@@ -427,7 +431,10 @@ function ラベル見た目スタイルを注入(targetDoc) {
       border: "3px solid yellow",
       borderRadius: "6px",
       boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-      padding: "0 8px"
+      padding: "0 8px",
+      // ★ DPR > 1の場合、transform: scaleで縮小（青枠と同じ）
+      transform: dpr > 1 ? `scale(${scale})` : "none",
+      transformOrigin: "top left"
     });
 
     const 左 = document.createElement("div");
