@@ -415,7 +415,7 @@ function ラベル見た目スタイルを注入(targetDoc) {
     // ★ 黄色枠を基準（0px）に設定
     const 枠Left = parseInt(String(s?.枠?.left || "700"), 10);
     const 相対Left = container ? 枠Left - 500 : 枠Left;
-    const 相対Top = container ? 0 : 計算Top;  // コンテナ内では常に 0px
+    const 相対Top = container ? 3 : 計算Top;  // コンテナ内では常に 3px（緑枠より3px下）
 
     dbg("上段帯パラメータ", { 枠Top, 余白px, 高さpx, 計算Top, 相対Top, 相対Left, 左列幅, 右幅文字列, 線色, 線太さ, 文字色, 背景色, dpr, scale });
 
