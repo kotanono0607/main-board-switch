@@ -424,7 +424,7 @@ function ラベル見た目スタイルを注入(targetDoc) {
       color: 文字色,
       background: 背景色,
       zIndex: 10000,
-      border: "1px solid " + 線色,
+      border: "3px solid yellow",
       borderRadius: "6px",
       boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
       padding: "0 8px"
