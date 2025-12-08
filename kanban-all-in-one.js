@@ -2402,6 +2402,14 @@ if (window.DEBUG_VERBOSE) {
           return safeGetClass(rec, "ClassC");
         }
 
+        // セグメント名を短縮形に変換
+        function getSegmentShortName(segment) {
+          if (segment === "個人番号利用事務セグメント") return "基幹";
+          if (segment === "LGWANセグメント") return "LGWAN";
+          if (segment === "インターネット接続セグメント") return "インターネット";
+          return "その他";
+        }
+
         // データを集計
         function aggregateData() {
           const recs = Array.isArray(window._recordsCache) ? window._recordsCache : [];
@@ -2419,16 +2427,21 @@ if (window.DEBUG_VERBOSE) {
             "その他": 0
           };
 
-          // 部署別集計
-          const byDept = {};
+          // 部署別・セグメント別・職員数の詳細集計
+          // byDeptDetail[部署名] = { 基幹: n, LGWAN: n, インターネット: n, その他: n, 職員: n }
+          const byDeptDetail = {};
 
           // サーバー室集計
           let serverRoomCount = 0;
+
+          // 画像候補の部署名リストを取得
+          const deptNames = (s.画像候補 || []).map(function(x) { return x?.名前; }).filter(Boolean);
 
           for (const r of recs) {
             const tid = r?._tableId;
             const belong = getBelongName(r);
             const segment = getSegment(r);
+            const segShort = getSegmentShortName(segment);
 
             // テーブル別
             if (byTable[tid] !== undefined) byTable[tid]++;
@@ -2440,9 +2453,19 @@ if (window.DEBUG_VERBOSE) {
               bySegment["その他"]++;
             }
 
-            // 部署別
-            if (belong) {
-              byDept[belong] = (byDept[belong] || 0) + 1;
+            // 部署別詳細集計
+            if (belong && belong !== 固定右名) {
+              if (!byDeptDetail[belong]) {
+                byDeptDetail[belong] = { 基幹: 0, LGWAN: 0, インターネット: 0, その他: 0, 職員: 0 };
+              }
+              // セグメント別にカウント（PC台帳とその他テーブル）
+              if (tid === 45208 || tid === 121624) {
+                byDeptDetail[belong][segShort]++;
+              }
+              // 職員数（45173テーブル）
+              if (tid === 45173) {
+                byDeptDetail[belong].職員++;
+              }
             }
 
             // サーバー室
@@ -2451,16 +2474,24 @@ if (window.DEBUG_VERBOSE) {
             }
           }
 
-          // 部署別ランキング（TOP 5、サーバー室除外）
-          const deptRanking = Object.entries(byDept)
-            .filter(([name]) => name !== 固定右名)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5);
+          // 部署リストを画像候補の順序に並べる
+          const deptList = [];
+          for (const name of deptNames) {
+            if (name !== 固定右名 && byDeptDetail[name]) {
+              deptList.push({ name: name, data: byDeptDetail[name] });
+            }
+          }
+          // 候補リストにない部署があれば最後に追加
+          for (const name of Object.keys(byDeptDetail)) {
+            if (!deptNames.includes(name)) {
+              deptList.push({ name: name, data: byDeptDetail[name] });
+            }
+          }
 
           const total = recs.length;
           const pcTotal = byTable[45208];
 
-          return { byTable, bySegment, deptRanking, serverRoomCount, pcTotal, total };
+          return { byTable, bySegment, byDeptDetail, deptList, serverRoomCount, pcTotal, total };
         }
 
         // プログレスバーのHTML生成
@@ -2487,11 +2518,23 @@ if (window.DEBUG_VERBOSE) {
             "その他": "#999"
           };
 
-          // 部署ランキングの最大値（バー表示用）
-          const maxDeptCount = data.deptRanking.length > 0 ? data.deptRanking[0][1] : 1;
+          // 短縮名用の色マップ
+          const segShortColors = {
+            "基幹": "#f5aaaa",
+            "LGWAN": "#99bbee",
+            "インターネット": "#88cc88",
+            "その他": "#bbb",
+            "職員": "#a5d6a7"
+          };
 
           let html = '';
-          html += '<div style="padding:20px;font-family:sans-serif;background:#f8f9fa;min-height:100%;box-sizing:border-box;">';
+          html += '<div id="summary-content" style="padding:20px;font-family:sans-serif;background:#f8f9fa;min-height:100%;box-sizing:border-box;">';
+
+          // ===== ヘッダー（更新ボタン付き） =====
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">';
+          html += '<span style="font-size:11px;color:#999;" id="summary-update-time"></span>';
+          html += '<button id="summary-refresh-btn" style="padding:6px 16px;font-size:13px;background:#1976d2;color:#fff;border:none;border-radius:4px;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,0.2);">🔄 更新</button>';
+          html += '</div>';
 
           // ===== 全体サマリ =====
           html += '<div style="margin-bottom:24px;">';
@@ -2532,26 +2575,44 @@ if (window.DEBUG_VERBOSE) {
           }
           html += '</div></div>';
 
-          // ===== 部署別ランキング =====
+          // ===== 部署別内訳 =====
           html += '<div style="margin-bottom:24px;">';
-          html += '<h3 style="margin:0 0 16px 0;font-size:16px;color:#333;border-bottom:2px solid #388e3c;padding-bottom:8px;">🏢 部署別ランキング（TOP 5）</h3>';
-          html += '<div style="background:#fff;border-radius:8px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">';
+          html += '<h3 style="margin:0 0 16px 0;font-size:16px;color:#333;border-bottom:2px solid #388e3c;padding-bottom:8px;">🏢 部署別内訳</h3>';
+          html += '<div style="background:#fff;border-radius:8px;padding:0;box-shadow:0 2px 4px rgba(0,0,0,0.1);overflow:hidden;">';
 
-          if (data.deptRanking.length === 0) {
-            html += '<p style="color:#999;text-align:center;margin:0;">データがありません</p>';
+          // テーブルヘッダー
+          html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+          html += '<thead>';
+          html += '<tr style="background:#f5f5f5;">';
+          html += '<th style="padding:10px 8px;text-align:left;border-bottom:2px solid #ddd;font-weight:600;">部署名</th>';
+          html += '<th style="padding:10px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;"><span style="display:inline-block;width:10px;height:10px;background:' + segShortColors["基幹"] + ';border-radius:2px;margin-right:4px;"></span>基幹</th>';
+          html += '<th style="padding:10px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;"><span style="display:inline-block;width:10px;height:10px;background:' + segShortColors["LGWAN"] + ';border-radius:2px;margin-right:4px;"></span>LGWAN</th>';
+          html += '<th style="padding:10px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;"><span style="display:inline-block;width:10px;height:10px;background:' + segShortColors["インターネット"] + ';border-radius:2px;margin-right:4px;"></span>ﾈｯﾄ</th>';
+          html += '<th style="padding:10px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;"><span style="display:inline-block;width:10px;height:10px;background:' + segShortColors["その他"] + ';border-radius:2px;margin-right:4px;"></span>他</th>';
+          html += '<th style="padding:10px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;"><span style="display:inline-block;width:10px;height:10px;background:' + segShortColors["職員"] + ';border-radius:2px;margin-right:4px;"></span>職員</th>';
+          html += '</tr>';
+          html += '</thead>';
+          html += '<tbody>';
+
+          if (data.deptList.length === 0) {
+            html += '<tr><td colspan="6" style="padding:20px;text-align:center;color:#999;">データがありません</td></tr>';
           } else {
-            data.deptRanking.forEach(function(item, idx) {
-              const name = item[0];
-              const cnt = item[1];
-              const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : (idx + 1) + '.';
-              html += '<div style="display:flex;align-items:center;margin-bottom:10px;">';
-              html += '<span style="width:30px;font-size:16px;">' + medal + '</span>';
-              html += '<span style="width:120px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + name + '">' + name + '</span>';
-              html += '<div style="flex:1;margin:0 12px;">' + progressBar(cnt, maxDeptCount, '#4caf50').replace('16px', '12px') + '</div>';
-              html += '<span style="min-width:50px;text-align:right;font-size:13px;font-weight:600;">' + cnt + '件</span>';
-              html += '</div>';
+            data.deptList.forEach(function(dept, idx) {
+              const bgColor = idx % 2 === 0 ? '#fff' : '#fafafa';
+              const d = dept.data;
+              html += '<tr style="background:' + bgColor + ';">';
+              html += '<td style="padding:8px;border-bottom:1px solid #eee;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;" title="' + dept.name + '">' + dept.name + '</td>';
+              html += '<td style="padding:8px 4px;text-align:center;border-bottom:1px solid #eee;">' + (d.基幹 || 0) + '</td>';
+              html += '<td style="padding:8px 4px;text-align:center;border-bottom:1px solid #eee;">' + (d.LGWAN || 0) + '</td>';
+              html += '<td style="padding:8px 4px;text-align:center;border-bottom:1px solid #eee;">' + (d.インターネット || 0) + '</td>';
+              html += '<td style="padding:8px 4px;text-align:center;border-bottom:1px solid #eee;">' + (d.その他 || 0) + '</td>';
+              html += '<td style="padding:8px 4px;text-align:center;border-bottom:1px solid #eee;font-weight:600;color:#2e7d32;">' + (d.職員 || 0) + '</td>';
+              html += '</tr>';
             });
           }
+
+          html += '</tbody>';
+          html += '</table>';
           html += '</div></div>';
 
           // ===== サーバー室状況 =====
@@ -2566,7 +2627,14 @@ if (window.DEBUG_VERBOSE) {
           html += '<div style="text-align:right;font-size:11px;color:#999;margin-top:4px;">全PC台数: ' + data.pcTotal + '件</div>';
           html += '</div></div>';
 
-          // ===== 更新時刻 =====
+          html += '</div>';
+          return html;
+        }
+
+        // 更新時刻を設定
+        function updateTimestamp() {
+          const el = document.getElementById('summary-update-time');
+          if (!el) return;
           const now = new Date();
           const timeStr = now.getFullYear() + '-' +
             String(now.getMonth() + 1).padStart(2, '0') + '-' +
@@ -2574,28 +2642,25 @@ if (window.DEBUG_VERBOSE) {
             String(now.getHours()).padStart(2, '0') + ':' +
             String(now.getMinutes()).padStart(2, '0') + ':' +
             String(now.getSeconds()).padStart(2, '0');
-          html += '<div style="text-align:right;font-size:11px;color:#999;">最終更新: ' + timeStr + '</div>';
+          el.textContent = '最終更新: ' + timeStr;
+        }
 
-          html += '</div>';
-          return html;
+        // 再描画関数
+        function refresh() {
+          container.innerHTML = renderSummary();
+          updateTimestamp();
+          // 更新ボタンにイベント再設定
+          const btn = document.getElementById('summary-refresh-btn');
+          if (btn) {
+            btn.addEventListener('click', function() {
+              console.log("[サマリパネル] 手動更新");
+              refresh();
+            });
+          }
         }
 
         // 初期表示
-        container.innerHTML = renderSummary();
-
-        // データ更新を監視して自動更新（5秒ごと）
-        let lastCount = 0;
-        const updateInterval = setInterval(function() {
-          const recs = Array.isArray(window._recordsCache) ? window._recordsCache : [];
-          if (recs.length !== lastCount) {
-            lastCount = recs.length;
-            container.innerHTML = renderSummary();
-            console.log("[サマリパネル] データ更新検知、再描画");
-          }
-        }, 5000);
-
-        // クリーンアップ用にintervalを保存
-        container._summaryInterval = updateInterval;
+        refresh();
 
         console.log("[TabManager] サマリパネルの初期化完了");
       }
