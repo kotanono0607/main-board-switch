@@ -2606,12 +2606,12 @@ if (window.DEBUG_VERBOSE) {
           // テーブルヘッダー生成関数
           function tableHeader() {
             let h = '<tr style="background:#f5f5f5;">';
-            h += '<th style="padding:8px 6px;text-align:left;border-bottom:2px solid #ddd;font-weight:600;font-size:11px;">部署名</th>';
-            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:11px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["基幹"] + ';border-radius:2px;"></span></th>';
-            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:11px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["LGWAN"] + ';border-radius:2px;"></span></th>';
-            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:11px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["インターネット"] + ';border-radius:2px;"></span></th>';
-            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:11px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["その他"] + ';border-radius:2px;"></span></th>';
-            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:11px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["職員"] + ';border-radius:2px;"></span></th>';
+            h += '<th style="padding:8px 4px;text-align:left;border-bottom:2px solid #ddd;font-weight:600;font-size:10px;width:50px;">部署名</th>';
+            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:10px;color:' + segShortColors["基幹"] + ';">基幹</th>';
+            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:10px;color:' + segShortColors["LGWAN"] + ';">LGWAN</th>';
+            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:10px;color:' + segShortColors["インターネット"] + ';">ﾈｯﾄ</th>';
+            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:10px;color:' + segShortColors["その他"] + ';">他</th>';
+            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:10px;color:' + segShortColors["職員"] + ';">職員</th>';
             h += '</tr>';
             return h;
           }
@@ -2626,7 +2626,7 @@ if (window.DEBUG_VERBOSE) {
                 const bgColor = idx % 2 === 0 ? '#fff' : '#fafafa';
                 const d = dept.data;
                 rows += '<tr style="background:' + bgColor + ';">';
-                rows += '<td style="padding:6px;border-bottom:1px solid #eee;font-weight:500;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;" title="' + dept.name + '">' + dept.name + '</td>';
+                rows += '<td style="padding:6px 4px;border-bottom:1px solid #eee;font-weight:500;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:50px;" title="' + dept.name + '">' + dept.name + '</td>';
                 rows += '<td style="padding:6px 4px;text-align:center;border-bottom:1px solid #eee;font-size:11px;">' + (d.基幹 || 0) + '</td>';
                 rows += '<td style="padding:6px 4px;text-align:center;border-bottom:1px solid #eee;font-size:11px;">' + (d.LGWAN || 0) + '</td>';
                 rows += '<td style="padding:6px 4px;text-align:center;border-bottom:1px solid #eee;font-size:11px;">' + (d.インターネット || 0) + '</td>';
@@ -2657,15 +2657,6 @@ if (window.DEBUG_VERBOSE) {
 
           html += '</div>'; // 2カラムグリッド終了
 
-          // 凡例
-          html += '<div style="padding:8px 12px;background:#f9f9f9;border-top:1px solid #eee;font-size:10px;color:#666;">';
-          html += '<span style="margin-right:12px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["基幹"] + ';border-radius:2px;margin-right:3px;"></span>基幹</span>';
-          html += '<span style="margin-right:12px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["LGWAN"] + ';border-radius:2px;margin-right:3px;"></span>LGWAN</span>';
-          html += '<span style="margin-right:12px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["インターネット"] + ';border-radius:2px;margin-right:3px;"></span>ﾈｯﾄ</span>';
-          html += '<span style="margin-right:12px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["その他"] + ';border-radius:2px;margin-right:3px;"></span>他</span>';
-          html += '<span><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["職員"] + ';border-radius:2px;margin-right:3px;"></span>職員</span>';
-          html += '</div>';
-
           html += '</div></div>'; // 部署別セクション終了
 
           html += '</div>';
@@ -2686,6 +2677,29 @@ if (window.DEBUG_VERBOSE) {
           el.textContent = '最終更新: ' + timeStr;
         }
 
+        // APIからデータを再取得してキャッシュを更新
+        async function fetchData() {
+          console.log("[サマリパネル] データ取得開始...");
+          try {
+            const recs1 = await window.PleasanterApi.レコード取得();
+            const recs2 = await window.PleasanterApi別.レコード取得();
+            const recs3 = await window.PleasanterApi_121624.レコード取得();
+
+            // テーブルIDを付与
+            recs1.forEach(function(r) { r._tableId = 45208; });
+            recs2.forEach(function(r) { r._tableId = 45173; });
+            recs3.forEach(function(r) { r._tableId = 121624; });
+
+            // キャッシュを更新
+            window._recordsCache = recs1.concat(recs2).concat(recs3);
+            console.log("[サマリパネル] データ取得完了:", window._recordsCache.length, "件");
+            return true;
+          } catch (e) {
+            console.error("[サマリパネル] データ取得エラー:", e);
+            return false;
+          }
+        }
+
         // 再描画関数
         function refresh() {
           container.innerHTML = renderSummary();
@@ -2693,8 +2707,11 @@ if (window.DEBUG_VERBOSE) {
           // 更新ボタンにイベント再設定
           const btn = document.getElementById('summary-refresh-btn');
           if (btn) {
-            btn.addEventListener('click', function() {
-              console.log("[サマリパネル] 手動更新");
+            btn.addEventListener('click', async function() {
+              console.log("[サマリパネル] 手動更新（データ再取得）");
+              btn.disabled = true;
+              btn.textContent = '取得中...';
+              await fetchData();
               refresh();
             });
           }
@@ -2703,14 +2720,15 @@ if (window.DEBUG_VERBOSE) {
         // 初期表示
         refresh();
 
-        // タブ切り替え時（表示時）に自動更新を発火
+        // タブ切り替え時（表示時）にデータ再取得＆更新を発火
         // MutationObserverでdisplay属性の変化を監視
         const observer = new MutationObserver(function(mutations) {
-          mutations.forEach(function(mutation) {
+          mutations.forEach(async function(mutation) {
             if (mutation.attributeName === 'style') {
               const display = container.style.display;
               if (display !== 'none' && display !== '') {
-                console.log("[サマリパネル] タブ選択検知、自動更新");
+                console.log("[サマリパネル] タブ選択検知、データ再取得");
+                await fetchData();
                 refresh();
               }
             }
