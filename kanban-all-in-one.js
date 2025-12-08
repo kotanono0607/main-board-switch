@@ -2356,21 +2356,8 @@ if (window.DEBUG_VERBOSE) {
 
 // 自動起動関数（タブマネージャーを使用）
 (function 自動起動() {
-  // タブ定義
+  // タブ定義（左から順に：情報機器リスト、各課配置状況）
   const タブ設定 = [
-    {
-      id: "kanban-image",
-      ラベル: "各課配置状況",
-      render: function(container) {
-        // 現在の画像カンバン機能を実行
-        console.log("[TabManager] 各課配置状況パネルを初期化中...");
-        if (window.Kanban起動) {
-          window.Kanban起動(container);
-        } else {
-          console.error("Kanban起動 関数が見つかりません");
-        }
-      }
-    },
     {
       id: "summary-panel",
       ラベル: "情報機器リスト",
@@ -2737,6 +2724,19 @@ if (window.DEBUG_VERBOSE) {
         observer.observe(container, { attributes: true, attributeFilter: ['style'] });
 
         console.log("[TabManager] サマリパネルの初期化完了");
+      }
+    },
+    {
+      id: "kanban-image",
+      ラベル: "各課配置状況",
+      render: function(container) {
+        // 現在の画像カンバン機能を実行
+        console.log("[TabManager] 各課配置状況パネルを初期化中...");
+        if (window.Kanban起動) {
+          window.Kanban起動(container);
+        } else {
+          console.error("Kanban起動 関数が見つかりません");
+        }
       }
     }
   ];
