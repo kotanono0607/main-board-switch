@@ -2528,8 +2528,8 @@ if (window.DEBUG_VERBOSE) {
           };
 
           let html = '';
-          // 横幅2.5倍対応：width: 250%相当のワイドレイアウト
-          html += '<div id="summary-content" style="padding:20px;font-family:sans-serif;background:#f8f9fa;min-height:100%;box-sizing:border-box;width:250%;max-width:2000px;">';
+          // コンテナ幅に合わせる（タブ・画像カンバンと同じ幅）
+          html += '<div id="summary-content" style="padding:20px;font-family:sans-serif;background:#f8f9fa;min-height:100%;box-sizing:border-box;width:100%;">';
 
           // ===== ヘッダー（更新ボタン付き） =====
           html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">';
@@ -2702,6 +2702,21 @@ if (window.DEBUG_VERBOSE) {
 
         // 初期表示
         refresh();
+
+        // タブ切り替え時（表示時）に自動更新を発火
+        // MutationObserverでdisplay属性の変化を監視
+        const observer = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.attributeName === 'style') {
+              const display = container.style.display;
+              if (display !== 'none' && display !== '') {
+                console.log("[サマリパネル] タブ選択検知、自動更新");
+                refresh();
+              }
+            }
+          });
+        });
+        observer.observe(container, { attributes: true, attributeFilter: ['style'] });
 
         console.log("[TabManager] サマリパネルの初期化完了");
       }
