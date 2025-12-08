@@ -2528,8 +2528,8 @@ if (window.DEBUG_VERBOSE) {
           };
 
           let html = '';
-          // コンテナ幅に合わせる（タブ・画像カンバンと同じ幅）
-          html += '<div id="summary-content" style="padding:20px;font-family:sans-serif;background:#f8f9fa;min-height:100%;box-sizing:border-box;width:100%;">';
+          // タブバー・画像カンバンと同じ幅（緑200px + 黄色950px = 1150px）
+          html += '<div id="summary-content" style="padding:20px;font-family:sans-serif;background:#f8f9fa;min-height:100%;box-sizing:border-box;width:1150px;">';
 
           // ===== ヘッダー（更新ボタン付き） =====
           html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">';
