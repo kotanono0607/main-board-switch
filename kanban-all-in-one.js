@@ -2360,10 +2360,10 @@ if (window.DEBUG_VERBOSE) {
   const タブ設定 = [
     {
       id: "kanban-image",
-      ラベル: "画像カンバン",
+      ラベル: "各課配置状況",
       render: function(container) {
         // 現在の画像カンバン機能を実行
-        console.log("[TabManager] 画像カンバンパネルを初期化中...");
+        console.log("[TabManager] 各課配置状況パネルを初期化中...");
         if (window.Kanban起動) {
           window.Kanban起動(container);
         } else {
@@ -2373,9 +2373,9 @@ if (window.DEBUG_VERBOSE) {
     },
     {
       id: "summary-panel",
-      ラベル: "サマリ",
+      ラベル: "情報機器リスト",
       render: function(container) {
-        console.log("[TabManager] サマリパネルを初期化中...");
+        console.log("[TabManager] 情報機器リストパネルを初期化中...");
 
         // ===== サマリパネル用のユーティリティ関数 =====
 
