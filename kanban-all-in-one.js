@@ -2415,7 +2415,7 @@ if (window.DEBUG_VERBOSE) {
           };
 
           // 部署別・セグメント別・職員数の詳細集計
-          // byDeptDetail[部署名] = { 基幹: n, LGWAN: n, インターネット: n, その他: n, 職員: n }
+          // byDeptDetail[部署名] = { 基幹: n, LGWAN: n, インターネット: n, その他: n, 一般: n, 会計: n }
           const byDeptDetail = {};
 
           // サーバー室集計
@@ -2430,6 +2430,9 @@ if (window.DEBUG_VERBOSE) {
             const segment = getSegment(r);
             const segShort = getSegmentShortName(segment);
 
+            // ClassJを取得（会計年度判定用）
+            const classJ = safeGetClass(r, "ClassJ");
+
             // テーブル別
             if (byTable[tid] !== undefined) byTable[tid]++;
 
@@ -2443,15 +2446,19 @@ if (window.DEBUG_VERBOSE) {
             // 部署別詳細集計
             if (belong && belong !== 固定右名) {
               if (!byDeptDetail[belong]) {
-                byDeptDetail[belong] = { 基幹: 0, LGWAN: 0, インターネット: 0, その他: 0, 職員: 0 };
+                byDeptDetail[belong] = { 基幹: 0, LGWAN: 0, インターネット: 0, その他: 0, 一般: 0, 会計: 0 };
               }
               // セグメント別にカウント（PC台帳とその他テーブル）
               if (tid === 45208 || tid === 121624) {
                 byDeptDetail[belong][segShort]++;
               }
-              // 職員数（45173テーブル）
+              // 職員数（45173テーブル）- 一般職員と会計年度を分ける
               if (tid === 45173) {
-                byDeptDetail[belong].職員++;
+                if (classJ === "会計年度") {
+                  byDeptDetail[belong].会計++;
+                } else {
+                  byDeptDetail[belong].一般++;
+                }
               }
             }
 
@@ -2497,6 +2504,13 @@ if (window.DEBUG_VERBOSE) {
           const data = aggregateData();
           const total = data.total;
 
+          // DPR対応（OS倍率100%/125%互換）
+          const dpr = window.devicePixelRatio || 1;
+          const scale = 1 / dpr;
+          const dprStyle = dpr > 1
+            ? 'transform:scale(' + scale + ');transform-origin:top left;'
+            : '';
+
           // セグメント色マップ
           const segColors = {
             "個人番号利用事務セグメント": "#f5aaaa",
@@ -2511,17 +2525,17 @@ if (window.DEBUG_VERBOSE) {
             "LGWAN": "#99bbee",
             "インターネット": "#88cc88",
             "その他": "#bbb",
-            "職員": "#a5d6a7"
+            "一般": "#a5d6a7",
+            "会計": "#ffcc80"
           };
 
           let html = '';
-          // タブバー・画像カンバンと同じ幅（緑200px + 黄色950px = 1150px）
-          html += '<div id="summary-content" style="padding:20px;font-family:sans-serif;background:#f8f9fa;min-height:100%;box-sizing:border-box;width:1150px;">';
+          // タブバー・画像カンバンと同じ幅（緑200px + 黄色950px = 1150px）、DPR対応付き
+          html += '<div id="summary-content" style="padding:20px;font-family:sans-serif;background:#f8f9fa;min-height:100%;box-sizing:border-box;width:1150px;' + dprStyle + '">';
 
-          // ===== ヘッダー（更新ボタン付き） =====
-          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">';
+          // ===== ヘッダー =====
+          html += '<div style="margin-bottom:16px;">';
           html += '<span style="font-size:11px;color:#999;" id="summary-update-time"></span>';
-          html += '<button id="summary-refresh-btn" style="padding:6px 16px;font-size:13px;background:#1976d2;color:#fff;border:none;border-radius:4px;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,0.2);">🔄 データ更新</button>';
           html += '</div>';
 
           // ===== 上段：全体サマリ + セグメント別 + サーバー室（3カラム） =====
@@ -2598,7 +2612,8 @@ if (window.DEBUG_VERBOSE) {
             h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:10px;color:' + segShortColors["LGWAN"] + ';">LGWAN</th>';
             h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:10px;color:' + segShortColors["インターネット"] + ';">ﾈｯﾄ</th>';
             h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:10px;color:' + segShortColors["その他"] + ';">他</th>';
-            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:10px;color:' + segShortColors["職員"] + ';">職員</th>';
+            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:10px;color:' + segShortColors["一般"] + ';">一般</th>';
+            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:10px;color:' + segShortColors["会計"] + ';">会計</th>';
             h += '</tr>';
             return h;
           }
@@ -2607,7 +2622,7 @@ if (window.DEBUG_VERBOSE) {
           function tableRows(depts) {
             let rows = '';
             if (depts.length === 0) {
-              rows += '<tr><td colspan="6" style="padding:12px;text-align:center;color:#999;font-size:11px;">データなし</td></tr>';
+              rows += '<tr><td colspan="7" style="padding:12px;text-align:center;color:#999;font-size:11px;">データなし</td></tr>';
             } else {
               depts.forEach(function(dept, idx) {
                 const bgColor = idx % 2 === 0 ? '#fff' : '#fafafa';
@@ -2618,7 +2633,8 @@ if (window.DEBUG_VERBOSE) {
                 rows += '<td style="padding:6px 4px;text-align:center;border-bottom:1px solid #eee;font-size:11px;">' + (d.LGWAN || 0) + '</td>';
                 rows += '<td style="padding:6px 4px;text-align:center;border-bottom:1px solid #eee;font-size:11px;">' + (d.インターネット || 0) + '</td>';
                 rows += '<td style="padding:6px 4px;text-align:center;border-bottom:1px solid #eee;font-size:11px;">' + (d.その他 || 0) + '</td>';
-                rows += '<td style="padding:6px 4px;text-align:center;border-bottom:1px solid #eee;font-size:11px;font-weight:600;color:#2e7d32;">' + (d.職員 || 0) + '</td>';
+                rows += '<td style="padding:6px 4px;text-align:center;border-bottom:1px solid #eee;font-size:11px;font-weight:600;color:#2e7d32;">' + (d.一般 || 0) + '</td>';
+                rows += '<td style="padding:6px 4px;text-align:center;border-bottom:1px solid #eee;font-size:11px;font-weight:600;color:#e65100;">' + (d.会計 || 0) + '</td>';
                 rows += '</tr>';
               });
             }
@@ -2691,17 +2707,6 @@ if (window.DEBUG_VERBOSE) {
         function refresh() {
           container.innerHTML = renderSummary();
           updateTimestamp();
-          // 更新ボタンにイベント再設定
-          const btn = document.getElementById('summary-refresh-btn');
-          if (btn) {
-            btn.addEventListener('click', async function() {
-              console.log("[サマリパネル] 手動更新（データ再取得）");
-              btn.disabled = true;
-              btn.textContent = '取得中...';
-              await fetchData();
-              refresh();
-            });
-          }
         }
 
         // 初期表示
