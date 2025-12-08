@@ -2528,7 +2528,8 @@ if (window.DEBUG_VERBOSE) {
           };
 
           let html = '';
-          html += '<div id="summary-content" style="padding:20px;font-family:sans-serif;background:#f8f9fa;min-height:100%;box-sizing:border-box;">';
+          // 横幅2.5倍対応：width: 250%相当のワイドレイアウト
+          html += '<div id="summary-content" style="padding:20px;font-family:sans-serif;background:#f8f9fa;min-height:100%;box-sizing:border-box;width:250%;max-width:2000px;">';
 
           // ===== ヘッダー（更新ボタン付き） =====
           html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">';
@@ -2536,17 +2537,20 @@ if (window.DEBUG_VERBOSE) {
           html += '<button id="summary-refresh-btn" style="padding:6px 16px;font-size:13px;background:#1976d2;color:#fff;border:none;border-radius:4px;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,0.2);">🔄 更新</button>';
           html += '</div>';
 
-          // ===== 全体サマリ =====
-          html += '<div style="margin-bottom:24px;">';
-          html += '<h3 style="margin:0 0 16px 0;font-size:16px;color:#333;border-bottom:2px solid #1976d2;padding-bottom:8px;">📊 全体サマリ</h3>';
-          html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">';
+          // ===== 上段：全体サマリ + セグメント別 + サーバー室（3カラム） =====
+          html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:24px;">';
+
+          // --- 全体サマリ ---
+          html += '<div>';
+          html += '<h3 style="margin:0 0 12px 0;font-size:15px;color:#333;border-bottom:2px solid #1976d2;padding-bottom:6px;">📊 全体サマリ</h3>';
+          html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">';
 
           // カード生成関数
           function statCard(label, value, sublabel, bgColor) {
-            return '<div style="background:' + bgColor + ';border-radius:8px;padding:16px;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,0.1);">' +
-              '<div style="font-size:28px;font-weight:700;color:#333;">' + value + '</div>' +
-              '<div style="font-size:14px;color:#666;margin-top:4px;">' + label + '</div>' +
-              (sublabel ? '<div style="font-size:11px;color:#999;margin-top:2px;">' + sublabel + '</div>' : '') +
+            return '<div style="background:' + bgColor + ';border-radius:6px;padding:12px;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,0.1);">' +
+              '<div style="font-size:24px;font-weight:700;color:#333;">' + value + '</div>' +
+              '<div style="font-size:12px;color:#666;margin-top:2px;">' + label + '</div>' +
+              (sublabel ? '<div style="font-size:10px;color:#999;">' + sublabel + '</div>' : '') +
               '</div>';
           }
 
@@ -2556,76 +2560,113 @@ if (window.DEBUG_VERBOSE) {
           html += statCard('合計', total, '', '#f3e5f5');
           html += '</div></div>';
 
-          // ===== セグメント別内訳 =====
-          html += '<div style="margin-bottom:24px;">';
-          html += '<h3 style="margin:0 0 16px 0;font-size:16px;color:#333;border-bottom:2px solid #7b1fa2;padding-bottom:8px;">🎨 セグメント別内訳</h3>';
-          html += '<div style="background:#fff;border-radius:8px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">';
+          // --- セグメント別内訳 ---
+          html += '<div>';
+          html += '<h3 style="margin:0 0 12px 0;font-size:15px;color:#333;border-bottom:2px solid #7b1fa2;padding-bottom:6px;">🎨 セグメント別内訳</h3>';
+          html += '<div style="background:#fff;border-radius:6px;padding:12px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">';
 
           const segments = ["個人番号利用事務セグメント", "LGWANセグメント", "インターネット接続セグメント"];
           for (const seg of segments) {
             const cnt = data.bySegment[seg] || 0;
             const shortName = seg.replace("セグメント", "");
-            html += '<div style="margin-bottom:12px;">';
-            html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">';
-            html += '<span style="font-size:13px;"><span style="display:inline-block;width:12px;height:12px;background:' + segColors[seg] + ';border-radius:2px;margin-right:8px;"></span>' + shortName + '</span>';
-            html += '<span style="font-size:13px;font-weight:600;">' + cnt + '件</span>';
+            html += '<div style="margin-bottom:10px;">';
+            html += '<div style="display:flex;justify-content:space-between;margin-bottom:3px;">';
+            html += '<span style="font-size:12px;"><span style="display:inline-block;width:10px;height:10px;background:' + segColors[seg] + ';border-radius:2px;margin-right:6px;"></span>' + shortName + '</span>';
+            html += '<span style="font-size:12px;font-weight:600;">' + cnt + '件</span>';
             html += '</div>';
             html += progressBar(cnt, total, segColors[seg]);
             html += '</div>';
           }
           html += '</div></div>';
 
-          // ===== 部署別内訳 =====
-          html += '<div style="margin-bottom:24px;">';
-          html += '<h3 style="margin:0 0 16px 0;font-size:16px;color:#333;border-bottom:2px solid #388e3c;padding-bottom:8px;">🏢 部署別内訳</h3>';
-          html += '<div style="background:#fff;border-radius:8px;padding:0;box-shadow:0 2px 4px rgba(0,0,0,0.1);overflow:hidden;">';
+          // --- サーバー室状況 ---
+          html += '<div>';
+          html += '<h3 style="margin:0 0 12px 0;font-size:15px;color:#333;border-bottom:2px solid #f57c00;padding-bottom:6px;">🖥️ サーバー室状況</h3>';
+          html += '<div style="background:#fff;border-radius:6px;padding:12px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+          html += '<span style="font-size:13px;">配置済みPC</span>';
+          html += '<span style="font-size:22px;font-weight:700;color:#f57c00;">' + data.serverRoomCount + '件</span>';
+          html += '</div>';
+          html += progressBar(data.serverRoomCount, data.pcTotal, '#ff9800');
+          html += '<div style="text-align:right;font-size:10px;color:#999;margin-top:4px;">全PC台数: ' + data.pcTotal + '件</div>';
+          html += '</div></div>';
 
-          // テーブルヘッダー
-          html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
-          html += '<thead>';
-          html += '<tr style="background:#f5f5f5;">';
-          html += '<th style="padding:10px 8px;text-align:left;border-bottom:2px solid #ddd;font-weight:600;">部署名</th>';
-          html += '<th style="padding:10px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;"><span style="display:inline-block;width:10px;height:10px;background:' + segShortColors["基幹"] + ';border-radius:2px;margin-right:4px;"></span>基幹</th>';
-          html += '<th style="padding:10px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;"><span style="display:inline-block;width:10px;height:10px;background:' + segShortColors["LGWAN"] + ';border-radius:2px;margin-right:4px;"></span>LGWAN</th>';
-          html += '<th style="padding:10px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;"><span style="display:inline-block;width:10px;height:10px;background:' + segShortColors["インターネット"] + ';border-radius:2px;margin-right:4px;"></span>ﾈｯﾄ</th>';
-          html += '<th style="padding:10px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;"><span style="display:inline-block;width:10px;height:10px;background:' + segShortColors["その他"] + ';border-radius:2px;margin-right:4px;"></span>他</th>';
-          html += '<th style="padding:10px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;"><span style="display:inline-block;width:10px;height:10px;background:' + segShortColors["職員"] + ';border-radius:2px;margin-right:4px;"></span>職員</th>';
-          html += '</tr>';
-          html += '</thead>';
-          html += '<tbody>';
+          html += '</div>'; // 上段グリッド終了
 
-          if (data.deptList.length === 0) {
-            html += '<tr><td colspan="6" style="padding:20px;text-align:center;color:#999;">データがありません</td></tr>';
-          } else {
-            data.deptList.forEach(function(dept, idx) {
-              const bgColor = idx % 2 === 0 ? '#fff' : '#fafafa';
-              const d = dept.data;
-              html += '<tr style="background:' + bgColor + ';">';
-              html += '<td style="padding:8px;border-bottom:1px solid #eee;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;" title="' + dept.name + '">' + dept.name + '</td>';
-              html += '<td style="padding:8px 4px;text-align:center;border-bottom:1px solid #eee;">' + (d.基幹 || 0) + '</td>';
-              html += '<td style="padding:8px 4px;text-align:center;border-bottom:1px solid #eee;">' + (d.LGWAN || 0) + '</td>';
-              html += '<td style="padding:8px 4px;text-align:center;border-bottom:1px solid #eee;">' + (d.インターネット || 0) + '</td>';
-              html += '<td style="padding:8px 4px;text-align:center;border-bottom:1px solid #eee;">' + (d.その他 || 0) + '</td>';
-              html += '<td style="padding:8px 4px;text-align:center;border-bottom:1px solid #eee;font-weight:600;color:#2e7d32;">' + (d.職員 || 0) + '</td>';
-              html += '</tr>';
-            });
+          // ===== 下段：部署別内訳（2カラム表示） =====
+          html += '<div>';
+          html += '<h3 style="margin:0 0 12px 0;font-size:15px;color:#333;border-bottom:2px solid #388e3c;padding-bottom:6px;">🏢 部署別内訳</h3>';
+          html += '<div style="background:#fff;border-radius:6px;padding:0;box-shadow:0 2px 4px rgba(0,0,0,0.1);overflow:hidden;">';
+
+          // 部署リストを2分割
+          const halfLen = Math.ceil(data.deptList.length / 2);
+          const leftDepts = data.deptList.slice(0, halfLen);
+          const rightDepts = data.deptList.slice(halfLen);
+
+          // テーブルヘッダー生成関数
+          function tableHeader() {
+            let h = '<tr style="background:#f5f5f5;">';
+            h += '<th style="padding:8px 6px;text-align:left;border-bottom:2px solid #ddd;font-weight:600;font-size:11px;">部署名</th>';
+            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:11px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["基幹"] + ';border-radius:2px;"></span></th>';
+            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:11px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["LGWAN"] + ';border-radius:2px;"></span></th>';
+            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:11px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["インターネット"] + ';border-radius:2px;"></span></th>';
+            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:11px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["その他"] + ';border-radius:2px;"></span></th>';
+            h += '<th style="padding:8px 4px;text-align:center;border-bottom:2px solid #ddd;font-weight:600;font-size:11px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["職員"] + ';border-radius:2px;"></span></th>';
+            h += '</tr>';
+            return h;
           }
 
-          html += '</tbody>';
-          html += '</table>';
-          html += '</div></div>';
+          // テーブル行生成関数
+          function tableRows(depts) {
+            let rows = '';
+            if (depts.length === 0) {
+              rows += '<tr><td colspan="6" style="padding:12px;text-align:center;color:#999;font-size:11px;">データなし</td></tr>';
+            } else {
+              depts.forEach(function(dept, idx) {
+                const bgColor = idx % 2 === 0 ? '#fff' : '#fafafa';
+                const d = dept.data;
+                rows += '<tr style="background:' + bgColor + ';">';
+                rows += '<td style="padding:6px;border-bottom:1px solid #eee;font-weight:500;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;" title="' + dept.name + '">' + dept.name + '</td>';
+                rows += '<td style="padding:6px 4px;text-align:center;border-bottom:1px solid #eee;font-size:11px;">' + (d.基幹 || 0) + '</td>';
+                rows += '<td style="padding:6px 4px;text-align:center;border-bottom:1px solid #eee;font-size:11px;">' + (d.LGWAN || 0) + '</td>';
+                rows += '<td style="padding:6px 4px;text-align:center;border-bottom:1px solid #eee;font-size:11px;">' + (d.インターネット || 0) + '</td>';
+                rows += '<td style="padding:6px 4px;text-align:center;border-bottom:1px solid #eee;font-size:11px;">' + (d.その他 || 0) + '</td>';
+                rows += '<td style="padding:6px 4px;text-align:center;border-bottom:1px solid #eee;font-size:11px;font-weight:600;color:#2e7d32;">' + (d.職員 || 0) + '</td>';
+                rows += '</tr>';
+              });
+            }
+            return rows;
+          }
 
-          // ===== サーバー室状況 =====
-          html += '<div style="margin-bottom:24px;">';
-          html += '<h3 style="margin:0 0 16px 0;font-size:16px;color:#333;border-bottom:2px solid #f57c00;padding-bottom:8px;">🖥️ サーバー室状況</h3>';
-          html += '<div style="background:#fff;border-radius:8px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">';
-          html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-          html += '<span style="font-size:14px;">配置済みPC</span>';
-          html += '<span style="font-size:20px;font-weight:700;color:#f57c00;">' + data.serverRoomCount + '件</span>';
+          // 2カラムテーブルレイアウト
+          html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">';
+
+          // 左テーブル
+          html += '<div style="border-right:1px solid #eee;">';
+          html += '<table style="width:100%;border-collapse:collapse;">';
+          html += '<thead>' + tableHeader() + '</thead>';
+          html += '<tbody>' + tableRows(leftDepts) + '</tbody>';
+          html += '</table></div>';
+
+          // 右テーブル
+          html += '<div>';
+          html += '<table style="width:100%;border-collapse:collapse;">';
+          html += '<thead>' + tableHeader() + '</thead>';
+          html += '<tbody>' + tableRows(rightDepts) + '</tbody>';
+          html += '</table></div>';
+
+          html += '</div>'; // 2カラムグリッド終了
+
+          // 凡例
+          html += '<div style="padding:8px 12px;background:#f9f9f9;border-top:1px solid #eee;font-size:10px;color:#666;">';
+          html += '<span style="margin-right:12px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["基幹"] + ';border-radius:2px;margin-right:3px;"></span>基幹</span>';
+          html += '<span style="margin-right:12px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["LGWAN"] + ';border-radius:2px;margin-right:3px;"></span>LGWAN</span>';
+          html += '<span style="margin-right:12px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["インターネット"] + ';border-radius:2px;margin-right:3px;"></span>ﾈｯﾄ</span>';
+          html += '<span style="margin-right:12px;"><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["その他"] + ';border-radius:2px;margin-right:3px;"></span>他</span>';
+          html += '<span><span style="display:inline-block;width:8px;height:8px;background:' + segShortColors["職員"] + ';border-radius:2px;margin-right:3px;"></span>職員</span>';
           html += '</div>';
-          html += '<div style="margin-top:8px;">' + progressBar(data.serverRoomCount, data.pcTotal, '#ff9800') + '</div>';
-          html += '<div style="text-align:right;font-size:11px;color:#999;margin-top:4px;">全PC台数: ' + data.pcTotal + '件</div>';
-          html += '</div></div>';
+
+          html += '</div></div>'; // 部署別セクション終了
 
           html += '</div>';
           return html;
