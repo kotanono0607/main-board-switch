@@ -2534,7 +2534,7 @@ if (window.DEBUG_VERBOSE) {
           // ===== ヘッダー（更新ボタン付き） =====
           html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">';
           html += '<span style="font-size:11px;color:#999;" id="summary-update-time"></span>';
-          html += '<button id="summary-refresh-btn" style="padding:6px 16px;font-size:13px;background:#1976d2;color:#fff;border:none;border-radius:4px;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,0.2);">🔄 更新</button>';
+          html += '<button id="summary-refresh-btn" style="padding:6px 16px;font-size:13px;background:#1976d2;color:#fff;border:none;border-radius:4px;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,0.2);">🔄 データ更新</button>';
           html += '</div>';
 
           // ===== 上段：全体サマリ + セグメント別 + サーバー室（3カラム） =====
