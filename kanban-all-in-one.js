@@ -2372,18 +2372,232 @@ if (window.DEBUG_VERBOSE) {
       }
     },
     {
-      id: "test-panel",
-      ラベル: "テストパネル",
+      id: "summary-panel",
+      ラベル: "サマリ",
       render: function(container) {
-        // テスト用の簡単なHTML表示
-        console.log("[TabManager] テストパネルを初期化中...");
-        container.innerHTML = `
-          <div style="padding: 40px; font-size: 18px; font-weight: 600; color: #333; background: #fff; border: 3px solid purple; border-radius: 8px; margin: 20px;">
-            <h2 style="margin: 0 0 20px 0; color: #6a1b9a;">テストパネル</h2>
-            <p style="margin: 10px 0; font-size: 16px; font-weight: 400;">タブ切り替えが正常に動作しています！</p>
-            <p style="margin: 10px 0; font-size: 14px; color: #666;">このパネルには将来的にPCリストなどの機能を追加できます。</p>
-          </div>
-        `;
+        console.log("[TabManager] サマリパネルを初期化中...");
+
+        // ===== サマリパネル用のユーティリティ関数 =====
+
+        // ClassHashから値を安全に取得
+        function safeGetClass(rec, key) {
+          let ch = rec && rec.ClassHash;
+          if (typeof ch === "string") {
+            try { ch = JSON.parse(ch); } catch { ch = {}; }
+          }
+          if (!ch || typeof ch !== "object") ch = {};
+          const val = ch[key] != null ? ch[key] : (rec && rec[key]);
+          return val != null ? String(val).normalize("NFKC").trim() : "";
+        }
+
+        // 所属名を取得（テーブルごとに異なるキー）
+        function getBelongName(rec) {
+          const map = { 45208: "ClassO", 45173: "ClassA", 121624: "ClassB" };
+          const key = map[rec?._tableId] || "ClassO";
+          return safeGetClass(rec, key);
+        }
+
+        // セグメント（ClassC）を取得
+        function getSegment(rec) {
+          return safeGetClass(rec, "ClassC");
+        }
+
+        // データを集計
+        function aggregateData() {
+          const recs = Array.isArray(window._recordsCache) ? window._recordsCache : [];
+          const s = window.Kanban設定 || {};
+          const 固定右名 = s?.固定右フレーム?.画像名 || "サーバー室";
+
+          // テーブル別集計
+          const byTable = { 45208: 0, 45173: 0, 121624: 0 };
+
+          // セグメント別集計
+          const bySegment = {
+            "個人番号利用事務セグメント": 0,
+            "LGWANセグメント": 0,
+            "インターネット接続セグメント": 0,
+            "その他": 0
+          };
+
+          // 部署別集計
+          const byDept = {};
+
+          // サーバー室集計
+          let serverRoomCount = 0;
+
+          for (const r of recs) {
+            const tid = r?._tableId;
+            const belong = getBelongName(r);
+            const segment = getSegment(r);
+
+            // テーブル別
+            if (byTable[tid] !== undefined) byTable[tid]++;
+
+            // セグメント別
+            if (bySegment[segment] !== undefined) {
+              bySegment[segment]++;
+            } else {
+              bySegment["その他"]++;
+            }
+
+            // 部署別
+            if (belong) {
+              byDept[belong] = (byDept[belong] || 0) + 1;
+            }
+
+            // サーバー室
+            if (belong === 固定右名 && tid === 45208) {
+              serverRoomCount++;
+            }
+          }
+
+          // 部署別ランキング（TOP 5、サーバー室除外）
+          const deptRanking = Object.entries(byDept)
+            .filter(([name]) => name !== 固定右名)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
+
+          const total = recs.length;
+          const pcTotal = byTable[45208];
+
+          return { byTable, bySegment, deptRanking, serverRoomCount, pcTotal, total };
+        }
+
+        // プログレスバーのHTML生成
+        function progressBar(value, max, color) {
+          const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+          return '<div style="display:flex;align-items:center;gap:8px;">' +
+            '<div style="flex:1;height:16px;background:#e0e0e0;border-radius:8px;overflow:hidden;">' +
+            '<div style="width:' + pct + '%;height:100%;background:' + color + ';border-radius:8px;transition:width 0.3s;"></div>' +
+            '</div>' +
+            '<span style="min-width:45px;text-align:right;font-size:12px;color:#666;">' + pct + '%</span>' +
+            '</div>';
+        }
+
+        // サマリパネルのHTMLを生成
+        function renderSummary() {
+          const data = aggregateData();
+          const total = data.total;
+
+          // セグメント色マップ
+          const segColors = {
+            "個人番号利用事務セグメント": "#f5aaaa",
+            "LGWANセグメント": "#99bbee",
+            "インターネット接続セグメント": "#88cc88",
+            "その他": "#999"
+          };
+
+          // 部署ランキングの最大値（バー表示用）
+          const maxDeptCount = data.deptRanking.length > 0 ? data.deptRanking[0][1] : 1;
+
+          let html = '';
+          html += '<div style="padding:20px;font-family:sans-serif;background:#f8f9fa;min-height:100%;box-sizing:border-box;">';
+
+          // ===== 全体サマリ =====
+          html += '<div style="margin-bottom:24px;">';
+          html += '<h3 style="margin:0 0 16px 0;font-size:16px;color:#333;border-bottom:2px solid #1976d2;padding-bottom:8px;">📊 全体サマリ</h3>';
+          html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">';
+
+          // カード生成関数
+          function statCard(label, value, sublabel, bgColor) {
+            return '<div style="background:' + bgColor + ';border-radius:8px;padding:16px;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,0.1);">' +
+              '<div style="font-size:28px;font-weight:700;color:#333;">' + value + '</div>' +
+              '<div style="font-size:14px;color:#666;margin-top:4px;">' + label + '</div>' +
+              (sublabel ? '<div style="font-size:11px;color:#999;margin-top:2px;">' + sublabel + '</div>' : '') +
+              '</div>';
+          }
+
+          html += statCard('PC台数', data.byTable[45208], '(45208)', '#e3f2fd');
+          html += statCard('職員数', data.byTable[45173], '(45173)', '#e8f5e9');
+          html += statCard('その他', data.byTable[121624], '(121624)', '#fff3e0');
+          html += statCard('合計', total, '', '#f3e5f5');
+          html += '</div></div>';
+
+          // ===== セグメント別内訳 =====
+          html += '<div style="margin-bottom:24px;">';
+          html += '<h3 style="margin:0 0 16px 0;font-size:16px;color:#333;border-bottom:2px solid #7b1fa2;padding-bottom:8px;">🎨 セグメント別内訳</h3>';
+          html += '<div style="background:#fff;border-radius:8px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">';
+
+          const segments = ["個人番号利用事務セグメント", "LGWANセグメント", "インターネット接続セグメント"];
+          for (const seg of segments) {
+            const cnt = data.bySegment[seg] || 0;
+            const shortName = seg.replace("セグメント", "");
+            html += '<div style="margin-bottom:12px;">';
+            html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">';
+            html += '<span style="font-size:13px;"><span style="display:inline-block;width:12px;height:12px;background:' + segColors[seg] + ';border-radius:2px;margin-right:8px;"></span>' + shortName + '</span>';
+            html += '<span style="font-size:13px;font-weight:600;">' + cnt + '件</span>';
+            html += '</div>';
+            html += progressBar(cnt, total, segColors[seg]);
+            html += '</div>';
+          }
+          html += '</div></div>';
+
+          // ===== 部署別ランキング =====
+          html += '<div style="margin-bottom:24px;">';
+          html += '<h3 style="margin:0 0 16px 0;font-size:16px;color:#333;border-bottom:2px solid #388e3c;padding-bottom:8px;">🏢 部署別ランキング（TOP 5）</h3>';
+          html += '<div style="background:#fff;border-radius:8px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">';
+
+          if (data.deptRanking.length === 0) {
+            html += '<p style="color:#999;text-align:center;margin:0;">データがありません</p>';
+          } else {
+            data.deptRanking.forEach(function(item, idx) {
+              const name = item[0];
+              const cnt = item[1];
+              const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : (idx + 1) + '.';
+              html += '<div style="display:flex;align-items:center;margin-bottom:10px;">';
+              html += '<span style="width:30px;font-size:16px;">' + medal + '</span>';
+              html += '<span style="width:120px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + name + '">' + name + '</span>';
+              html += '<div style="flex:1;margin:0 12px;">' + progressBar(cnt, maxDeptCount, '#4caf50').replace('16px', '12px') + '</div>';
+              html += '<span style="min-width:50px;text-align:right;font-size:13px;font-weight:600;">' + cnt + '件</span>';
+              html += '</div>';
+            });
+          }
+          html += '</div></div>';
+
+          // ===== サーバー室状況 =====
+          html += '<div style="margin-bottom:24px;">';
+          html += '<h3 style="margin:0 0 16px 0;font-size:16px;color:#333;border-bottom:2px solid #f57c00;padding-bottom:8px;">🖥️ サーバー室状況</h3>';
+          html += '<div style="background:#fff;border-radius:8px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+          html += '<span style="font-size:14px;">配置済みPC</span>';
+          html += '<span style="font-size:20px;font-weight:700;color:#f57c00;">' + data.serverRoomCount + '件</span>';
+          html += '</div>';
+          html += '<div style="margin-top:8px;">' + progressBar(data.serverRoomCount, data.pcTotal, '#ff9800') + '</div>';
+          html += '<div style="text-align:right;font-size:11px;color:#999;margin-top:4px;">全PC台数: ' + data.pcTotal + '件</div>';
+          html += '</div></div>';
+
+          // ===== 更新時刻 =====
+          const now = new Date();
+          const timeStr = now.getFullYear() + '-' +
+            String(now.getMonth() + 1).padStart(2, '0') + '-' +
+            String(now.getDate()).padStart(2, '0') + ' ' +
+            String(now.getHours()).padStart(2, '0') + ':' +
+            String(now.getMinutes()).padStart(2, '0') + ':' +
+            String(now.getSeconds()).padStart(2, '0');
+          html += '<div style="text-align:right;font-size:11px;color:#999;">最終更新: ' + timeStr + '</div>';
+
+          html += '</div>';
+          return html;
+        }
+
+        // 初期表示
+        container.innerHTML = renderSummary();
+
+        // データ更新を監視して自動更新（5秒ごと）
+        let lastCount = 0;
+        const updateInterval = setInterval(function() {
+          const recs = Array.isArray(window._recordsCache) ? window._recordsCache : [];
+          if (recs.length !== lastCount) {
+            lastCount = recs.length;
+            container.innerHTML = renderSummary();
+            console.log("[サマリパネル] データ更新検知、再描画");
+          }
+        }, 5000);
+
+        // クリーンアップ用にintervalを保存
+        container._summaryInterval = updateInterval;
+
+        console.log("[TabManager] サマリパネルの初期化完了");
       }
     }
   ];
