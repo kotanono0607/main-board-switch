@@ -3068,6 +3068,10 @@ if (window.DEBUG_VERBOSE) {
         "font-size: 13px"
       ].join(";");
 
+      // 現在日時
+      var 今日 = new Date();
+      今日.setHours(0, 0, 0, 0);
+
       // ヘッダー行
       var thead = document.createElement("thead");
       thead.innerHTML = [
@@ -3077,6 +3081,7 @@ if (window.DEBUG_VERBOSE) {
         "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>氏名</th>",
         "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>任用期間開始</th>",
         "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>任用期間終了</th>",
+        "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>残り日数</th>",
         "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>接続帯域</th>",
         "</tr>"
       ].join("");
@@ -3099,6 +3104,31 @@ if (window.DEBUG_VERBOSE) {
         var 開始 = 開始Raw ? new Date(開始Raw).toLocaleDateString("ja-JP") : "";
         var 終了 = 終了Raw ? new Date(終了Raw).toLocaleDateString("ja-JP") : "";
 
+        // 残り日数計算
+        var 残り日数表示 = "";
+        var 残り日数スタイル = "";
+        if (終了Raw) {
+          var 終了日 = new Date(終了Raw);
+          終了日.setHours(0, 0, 0, 0);
+          var 差分ms = 終了日.getTime() - 今日.getTime();
+          var 残り日数 = Math.ceil(差分ms / (1000 * 60 * 60 * 24));
+          if (残り日数 < 0) {
+            残り日数表示 = "終了";
+            残り日数スタイル = "color:#999;";
+          } else if (残り日数 === 0) {
+            残り日数表示 = "本日終了";
+            残り日数スタイル = "color:#d9534f;font-weight:bold;";
+          } else if (残り日数 <= 30) {
+            残り日数表示 = 残り日数 + "日";
+            残り日数スタイル = "color:#d9534f;font-weight:bold;";
+          } else if (残り日数 <= 90) {
+            残り日数表示 = 残り日数 + "日";
+            残り日数スタイル = "color:#f0ad4e;";
+          } else {
+            残り日数表示 = 残り日数 + "日";
+          }
+        }
+
         var tr = document.createElement("tr");
         tr.innerHTML = [
           "<td style='padding:8px;border:1px solid #ddd;'>" + 課名 + "</td>",
@@ -3106,6 +3136,7 @@ if (window.DEBUG_VERBOSE) {
           "<td style='padding:8px;border:1px solid #ddd;'>" + 氏名 + "</td>",
           "<td style='padding:8px;border:1px solid #ddd;'>" + 開始 + "</td>",
           "<td style='padding:8px;border:1px solid #ddd;'>" + 終了 + "</td>",
+          "<td style='padding:8px;border:1px solid #ddd;" + 残り日数スタイル + "'>" + 残り日数表示 + "</td>",
           "<td style='padding:8px;border:1px solid #ddd;'>" + 接続帯域 + "</td>"
         ].join("");
         tbody.appendChild(tr);
