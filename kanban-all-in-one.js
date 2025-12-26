@@ -1167,6 +1167,75 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanLabels 初期化完了");
 })(window);
 
 /* ===============================================================
+ * 6-2. PLEASANTER-API-116426.JS
+ * テーブル116426 データ取得（会計年度管理用）
+ * ============================================================= */
+(function (w) {
+  "use strict";
+
+  /* ---------- 設定 ---------- */
+  var 設定 = {
+    urlBase: "http://gwsv.nanyo-ad.ad.nanyo/api/items",
+    tableId: 116426,
+    apiKey : "f2ae46b2fd9669a23313a1230dd3b7ecc094ffc16b0798ae156d940a2be85b5395f44bac9eb20058143500a3c0d56b6c76d4f00acc842a08ff4748ab0beb2f46"
+  };
+
+  /* ---------- 応答検証 ---------- */
+  async function 応答確認(res) {
+    var raw = await res.text();
+    var json; try { json = JSON.parse(raw); } catch (e) { json = {}; }
+    if (!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
+    var r = (json && json.Response) ? json.Response : {};
+    if (r && r.IsSuccess === false) throw new Error(r.Message || "IsSuccess=false");
+    return r;
+  }
+
+  /* ---------- 1ページ分取得 ---------- */
+  async function 一ページ取得(offset) {
+    var url = 設定.urlBase + "/" + 設定.tableId + "/get";
+    var body = {
+      ApiVersion: 1.1,
+      ApiKey    : 設定.apiKey,
+      Offset    : offset,
+      View      : { Conditions: [] }
+    };
+    var res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(body)
+    });
+    var r = await 応答確認(res);
+    var rows      = Array.isArray(r && r.Data) ? r.Data : [];
+    var total     = Number((r && r.TotalCount) || 0);
+    var pageSize  = Number((r && r.PageSize) || (rows.length || 200));
+    var currentOf = Number((r && r.Offset) || offset);
+    var nextOffset= currentOf + pageSize;
+    return { rows, total, pageSize, currentOf, nextOffset };
+  }
+
+  /* ---------- 公開API ---------- */
+  async function レコード取得() {
+    var 収集 = [], offset = 0;
+    for (var i = 0; i < 2000; i++) {
+      var ページ = await 一ページ取得(offset);
+      var rows = ページ.rows, total = ページ.total, nextOffset = ページ.nextOffset;
+      if (!rows.length) break;
+      Array.prototype.push.apply(収集, rows);
+      if (window.DEBUG_VERBOSE) console.log("ページ取得(116426): offset=" + ページ.currentOf + ", pageSize=" + ページ.pageSize + ", 収集=" + 収集.length + "/" + (total || "?"));
+      if (total && nextOffset >= total) break;
+      offset = nextOffset;
+    }
+    w._recordsCache_116426 = 収集;
+    return 収集;
+  }
+
+  w.PleasanterApi_116426 = { レコード取得 };
+
+  if (window.DEBUG_VERBOSE) console.log("✓ PleasanterApi_116426 初期化完了（テーブル116426）");
+})(window);
+
+/* ===============================================================
  * 7. PLEASANTER-UPDATE-API.JS
  * レコード更新API
  * ============================================================= */
@@ -2871,11 +2940,190 @@ if (window.DEBUG_VERBOSE) {
     };
     btnContainer.appendChild(btn);
 
+    // 会計年度管理ボタン
+    var btn2 = document.createElement("button");
+    btn2.textContent = "会計年度管理";
+    btn2.style.cssText = [
+      "padding: 15px 40px",
+      "font-size: 18px",
+      "background: #5cb85c",
+      "color: #fff",
+      "border: none",
+      "border-radius: 8px",
+      "cursor: pointer",
+      "transition: background 0.2s"
+    ].join(";");
+    btn2.onmouseover = function() { btn2.style.background = "#4cae4c"; };
+    btn2.onmouseout = function() { btn2.style.background = "#5cb85c"; };
+    btn2.onclick = function() {
+      // メニューを非表示
+      menu.style.display = "none";
+      // 会計年度管理画面を起動
+      console.log("▶ 会計年度管理を起動します");
+      setTimeout(会計年度管理起動, 100);
+    };
+    btnContainer.appendChild(btn2);
+
     menu.appendChild(btnContainer);
     document.body.appendChild(menu);
 
     console.log("✓ メニュー画面を表示しました");
   }
+
+  /* ========================= 会計年度管理画面 ========================= */
+
+  async function 会計年度管理起動() {
+    // 設定から枠情報を取得
+    var 設定 = window.Kanban設定 || {};
+    var 枠 = 設定.枠 || { top: "100px", left: "700px", baseWidth: 950, baseHeight: 700 };
+
+    // コンテナ作成
+    var container = document.createElement("div");
+    container.id = "kaikei-nendo-container";
+    container.style.cssText = [
+      "position: fixed",
+      "top: " + 枠.top,
+      "left: " + 枠.left,
+      "width: " + 枠.baseWidth + "px",
+      "height: " + 枠.baseHeight + "px",
+      "background: #fff",
+      "border-radius: 12px",
+      "box-shadow: 0 8px 32px rgba(0,0,0,0.2)",
+      "z-index: 99999",
+      "display: flex",
+      "flex-direction: column",
+      "font-family: 'Segoe UI', 'Meiryo', sans-serif",
+      "overflow: hidden"
+    ].join(";");
+
+    // ヘッダー（タイトル + 戻るボタン）
+    var header = document.createElement("div");
+    header.style.cssText = [
+      "display: flex",
+      "justify-content: space-between",
+      "align-items: center",
+      "padding: 15px 20px",
+      "background: #5cb85c",
+      "color: #fff"
+    ].join(";");
+
+    var title = document.createElement("h2");
+    title.textContent = "会計年度管理";
+    title.style.cssText = "margin: 0; font-size: 20px;";
+    header.appendChild(title);
+
+    var backBtn = document.createElement("button");
+    backBtn.textContent = "戻る →";
+    backBtn.style.cssText = [
+      "padding: 8px 16px",
+      "font-size: 14px",
+      "background: #fff",
+      "color: #5cb85c",
+      "border: none",
+      "border-radius: 4px",
+      "cursor: pointer"
+    ].join(";");
+    backBtn.onclick = function() {
+      container.remove();
+      var menu = document.getElementById("kanban-main-menu");
+      if (menu) {
+        menu.style.display = "flex";
+      } else {
+        window.メニュー画面表示();
+      }
+    };
+    header.appendChild(backBtn);
+    container.appendChild(header);
+
+    // ローディング表示
+    var loadingDiv = document.createElement("div");
+    loadingDiv.style.cssText = "padding: 40px; text-align: center; color: #666;";
+    loadingDiv.textContent = "データを読み込み中...";
+    container.appendChild(loadingDiv);
+
+    document.body.appendChild(container);
+
+    // データ取得
+    try {
+      var records = await window.PleasanterApi_116426.レコード取得();
+      console.log("会計年度管理: " + records.length + "件取得");
+
+      // ローディング削除
+      loadingDiv.remove();
+
+      // テーブルコンテナ
+      var tableContainer = document.createElement("div");
+      tableContainer.style.cssText = "flex: 1; overflow: auto; padding: 15px;";
+
+      // テーブル作成
+      var table = document.createElement("table");
+      table.style.cssText = [
+        "width: 100%",
+        "border-collapse: collapse",
+        "font-size: 13px"
+      ].join(";");
+
+      // ヘッダー行
+      var thead = document.createElement("thead");
+      thead.innerHTML = [
+        "<tr style='background:#f5f5f5;'>",
+        "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>課名</th>",
+        "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>係名</th>",
+        "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>氏名</th>",
+        "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>任用期間開始</th>",
+        "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>任用期間終了</th>",
+        "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>接続帯域</th>",
+        "</tr>"
+      ].join("");
+      table.appendChild(thead);
+
+      // データ行
+      var tbody = document.createElement("tbody");
+      records.forEach(function(rec) {
+        var classHash = rec.ClassHash || {};
+        var dateHash = rec.DateHash || {};
+
+        var 課名 = classHash.ClassC || rec.ClassC || "";
+        var 係名 = classHash.ClassI || rec.ClassI || "";
+        var 氏名 = classHash.ClassG || rec.ClassG || "";
+        var 接続帯域 = classHash.ClassJ || rec.ClassJ || "";
+
+        // 日付フォーマット
+        var 開始Raw = dateHash.DateB || rec.DateB || "";
+        var 終了Raw = dateHash.DateC || rec.DateC || "";
+        var 開始 = 開始Raw ? new Date(開始Raw).toLocaleDateString("ja-JP") : "";
+        var 終了 = 終了Raw ? new Date(終了Raw).toLocaleDateString("ja-JP") : "";
+
+        var tr = document.createElement("tr");
+        tr.innerHTML = [
+          "<td style='padding:8px;border:1px solid #ddd;'>" + 課名 + "</td>",
+          "<td style='padding:8px;border:1px solid #ddd;'>" + 係名 + "</td>",
+          "<td style='padding:8px;border:1px solid #ddd;'>" + 氏名 + "</td>",
+          "<td style='padding:8px;border:1px solid #ddd;'>" + 開始 + "</td>",
+          "<td style='padding:8px;border:1px solid #ddd;'>" + 終了 + "</td>",
+          "<td style='padding:8px;border:1px solid #ddd;'>" + 接続帯域 + "</td>"
+        ].join("");
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      tableContainer.appendChild(table);
+      container.appendChild(tableContainer);
+
+      // 件数表示
+      var footer = document.createElement("div");
+      footer.style.cssText = "padding: 10px 20px; background: #f5f5f5; border-top: 1px solid #ddd; font-size: 12px; color: #666;";
+      footer.textContent = "全 " + records.length + " 件";
+      container.appendChild(footer);
+
+    } catch (e) {
+      loadingDiv.textContent = "データ取得エラー: " + e.message;
+      loadingDiv.style.color = "#d9534f";
+      console.error("会計年度管理データ取得失敗:", e);
+    }
+  }
+
+  window.会計年度管理起動 = 会計年度管理起動;
 
   // メニュー画面を公開（外部から呼び出し可能に）
   window.メニュー画面表示 = メニュー画面表示;
