@@ -2889,13 +2889,17 @@ if (window.DEBUG_VERBOSE) {
     var scale = 1 / dpr;
     var transformStyle = dpr > 1 ? "scale(" + scale + ")" : "none";
 
-    // メニューコンテナ作成（既存の枠設定に合わせる）
+    // ★ 情報機器管理と同じ位置（left: 500px）に配置
+    var menuLeft = "500px";
+    var menuTop = "64px";  // タブバーの下と同じ位置
+
+    // メニューコンテナ作成（情報機器管理と同じ位置・サイズ）
     var menu = document.createElement("div");
     menu.id = "kanban-main-menu";
     menu.style.cssText = [
       "position: fixed",
-      "top: " + 枠.top,
-      "left: " + 枠.left,
+      "top: " + menuTop,
+      "left: " + menuLeft,
       "width: " + 枠.baseWidth + "px",
       "height: " + 枠.baseHeight + "px",
       "background: #fff",
@@ -2994,13 +2998,17 @@ if (window.DEBUG_VERBOSE) {
     var scale = 1 / dpr;
     var transformStyle = dpr > 1 ? "scale(" + scale + ")" : "none";
 
-    // コンテナ作成
+    // ★ 情報機器管理と同じ位置（left: 500px）に配置
+    var containerLeft = "500px";
+    var containerTop = "64px";  // タブバーの下と同じ位置
+
+    // コンテナ作成（情報機器管理と同じ位置・サイズ）
     var container = document.createElement("div");
     container.id = "kaikei-nendo-container";
     container.style.cssText = [
       "position: fixed",
-      "top: " + 枠.top,
-      "left: " + 枠.left,
+      "top: " + containerTop,
+      "left: " + containerLeft,
       "width: " + 枠.baseWidth + "px",
       "height: " + 枠.baseHeight + "px",
       "background: #fff",
