@@ -2960,7 +2960,12 @@ if (window.DEBUG_VERBOSE) {
       menu.style.display = "none";
       // 会計年度管理画面を起動
       console.log("▶ 会計年度管理を起動します");
-      setTimeout(会計年度管理起動, 100);
+      if (typeof 会計年度管理起動 === "function") {
+        setTimeout(会計年度管理起動, 100);
+      } else {
+        console.error("会計年度管理起動 関数が見つかりません");
+        menu.style.display = "flex";
+      }
     };
     btnContainer.appendChild(btn2);
 
