@@ -2201,6 +2201,53 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanBootstrap 初期化完了");
       transformOrigin: "top left"
     });
 
+    // 戻るボタンを追加
+    const backButton = document.createElement("button");
+    backButton.textContent = "← 戻る";
+    Object.assign(backButton.style, {
+      border: "none",
+      background: "#666",
+      color: "#fff",
+      cursor: "pointer",
+      fontSize: "14px",
+      fontWeight: "500",
+      padding: "8px 16px",
+      transition: "all 0.2s",
+      borderRight: "1px solid #ccc"
+    });
+    backButton.addEventListener("mouseenter", () => {
+      backButton.style.background = "#555";
+    });
+    backButton.addEventListener("mouseleave", () => {
+      backButton.style.background = "#666";
+    });
+    backButton.addEventListener("click", () => {
+      // タブマネージャーのUIを削除
+      if (tabBarElement) {
+        tabBarElement.remove();
+        tabBarElement = null;
+      }
+      if (containerWrapperElement) {
+        containerWrapperElement.remove();
+        containerWrapperElement = null;
+      }
+      // カンバンフレームを削除
+      const kanbanFrame = document.getElementById("kanban-frame-single-root");
+      if (kanbanFrame) kanbanFrame.remove();
+      // 画像メニューを削除
+      const imageMenu = document.getElementById("kanban-image-menu");
+      if (imageMenu) imageMenu.remove();
+      // メニュー画面を再表示
+      const menu = document.getElementById("kanban-main-menu");
+      if (menu) {
+        menu.style.display = "flex";
+      } else {
+        window.メニュー画面表示();
+      }
+      console.log("▶ メニューに戻りました");
+    });
+    tabBar.appendChild(backButton);
+
     tabConfigs.forEach((config, index) => {
       const tabButton = document.createElement("button");
       tabButton.textContent = config.ラベル;
@@ -2782,7 +2829,9 @@ if (window.DEBUG_VERBOSE) {
       "display: flex",
       "flex-direction: column",
       "align-items: center",
-      "justify-content: center",
+      "justify-content: flex-start",
+      "padding-top: 60px",
+      "box-sizing: border-box",
       "font-family: 'Segoe UI', 'Meiryo', sans-serif"
     ].join(";");
 
