@@ -3120,7 +3120,26 @@ if (window.DEBUG_VERBOSE) {
         var 課名 = classHash.ClassC || rec.ClassC || "";
         var 係名 = classHash.ClassI || rec.ClassI || "";
         var 氏名 = classHash.ClassG || rec.ClassG || "";
-        var 接続帯域 = classHash.ClassJ || rec.ClassJ || "";
+        var 接続帯域Raw = classHash.ClassJ || rec.ClassJ || "";
+
+        // 接続帯域を略称・色付きで変換
+        var 接続帯域HTML = "";
+        if (接続帯域Raw) {
+          var 帯域リスト = 接続帯域Raw.split("_");
+          var タグリスト = [];
+          帯域リスト.forEach(function(帯域) {
+            var 帯域トリム = 帯域.trim();
+            if (帯域トリム.indexOf("インターネット") >= 0) {
+              タグリスト.push("<span style='background:#e8f7e8;color:#2e7d32;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:3px;'>ＩＨ</span>");
+            } else if (帯域トリム.indexOf("LGWAN") >= 0) {
+              タグリスト.push("<span style='background:#e6f0ff;color:#1565c0;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:3px;'>ＬＧ</span>");
+            } else if (帯域トリム.indexOf("個人番号") >= 0 || 帯域トリム.indexOf("基幹") >= 0) {
+              タグリスト.push("<span style='background:#ffe5e5;color:#c62828;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:3px;'>基幹</span>");
+            }
+            // その他は省略
+          });
+          接続帯域HTML = タグリスト.join("");
+        }
 
         // 日付フォーマット
         var 開始Raw = dateHash.DateB || rec.DateB || "";
@@ -3161,7 +3180,7 @@ if (window.DEBUG_VERBOSE) {
           "<td style='padding:8px;border:1px solid #ddd;'>" + 開始 + "</td>",
           "<td style='padding:8px;border:1px solid #ddd;'>" + 終了 + "</td>",
           "<td style='padding:8px;border:1px solid #ddd;" + 残り日数スタイル + "'>" + 残り日数表示 + "</td>",
-          "<td style='padding:8px;border:1px solid #ddd;'>" + 接続帯域 + "</td>"
+          "<td style='padding:8px;border:1px solid #ddd;'>" + 接続帯域HTML + "</td>"
         ].join("");
         tbody.appendChild(tr);
       });
