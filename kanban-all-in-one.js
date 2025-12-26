@@ -3080,6 +3080,29 @@ if (window.DEBUG_VERBOSE) {
       // ローディング削除
       loadingDiv.remove();
 
+      // 現在日時
+      var 今日 = new Date();
+      今日.setHours(0, 0, 0, 0);
+
+      // 残り日数を計算してレコードに追加
+      records.forEach(function(rec) {
+        var dateHash = rec.DateHash || {};
+        var 終了Raw = dateHash.DateC || rec.DateC || "";
+        if (終了Raw) {
+          var 終了日 = new Date(終了Raw);
+          終了日.setHours(0, 0, 0, 0);
+          var 差分ms = 終了日.getTime() - 今日.getTime();
+          rec._残り日数 = Math.ceil(差分ms / (1000 * 60 * 60 * 24));
+        } else {
+          rec._残り日数 = 99999; // 終了日未設定は最後に
+        }
+      });
+
+      // デフォルトで残り日数の昇順にソート
+      records.sort(function(a, b) {
+        return a._残り日数 - b._残り日数;
+      });
+
       // テーブルコンテナ
       var tableContainer = document.createElement("div");
       tableContainer.style.cssText = "flex: 1; overflow: auto; padding: 15px;";
@@ -3092,9 +3115,8 @@ if (window.DEBUG_VERBOSE) {
         "font-size: 13px"
       ].join(";");
 
-      // 現在日時
-      var 今日 = new Date();
-      今日.setHours(0, 0, 0, 0);
+      // ソート状態管理
+      var sortAsc = true;
 
       // ヘッダー行
       var thead = document.createElement("thead");
@@ -3106,88 +3128,107 @@ if (window.DEBUG_VERBOSE) {
         "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>氏名</th>",
         "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>任用期間開始</th>",
         "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>任用期間終了</th>",
-        "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>残り日数</th>",
+        "<th style='padding:10px;border:1px solid #ddd;text-align:left;cursor:pointer;' id='sort-remaining-days'>残り日数 ▲</th>",
         "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>接続帯域</th>",
         "</tr>"
       ].join("");
       table.appendChild(thead);
 
-      // データ行
-      var tbody = document.createElement("tbody");
-      records.forEach(function(rec) {
-        var classHash = rec.ClassHash || {};
-        var dateHash = rec.DateHash || {};
+      // テーブル行を生成する関数
+      function generateRows(sortedRecords) {
+        var tbody = table.querySelector("tbody");
+        if (tbody) tbody.remove();
 
-        var 課名 = classHash.ClassC || rec.ClassC || "";
-        var 係名 = classHash.ClassI || rec.ClassI || "";
-        var ADUSER = classHash.ClassE || rec.ClassE || "";
-        var 氏名 = classHash.ClassG || rec.ClassG || "";
-        var 接続帯域Raw = classHash.ClassJ || rec.ClassJ || "";
+        tbody = document.createElement("tbody");
+        sortedRecords.forEach(function(rec) {
+          var classHash = rec.ClassHash || {};
+          var dateHash = rec.DateHash || {};
 
-        // 接続帯域を略称・色付きで変換
-        var 接続帯域HTML = "";
-        if (接続帯域Raw) {
-          var 帯域リスト = 接続帯域Raw.split("_");
-          var タグリスト = [];
-          帯域リスト.forEach(function(帯域) {
-            var 帯域トリム = 帯域.trim();
-            if (帯域トリム.indexOf("インターネット") >= 0) {
-              タグリスト.push("<span style='background:#e8f7e8;color:#2e7d32;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:3px;'>ＩＨ</span>");
-            } else if (帯域トリム.indexOf("LGWAN") >= 0) {
-              タグリスト.push("<span style='background:#e6f0ff;color:#1565c0;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:3px;'>ＬＧ</span>");
-            } else if (帯域トリム.indexOf("個人番号") >= 0 || 帯域トリム.indexOf("基幹") >= 0) {
-              タグリスト.push("<span style='background:#ffe5e5;color:#c62828;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:3px;'>基幹</span>");
-            }
-            // その他は省略
-          });
-          接続帯域HTML = タグリスト.join("");
-        }
+          var 課名 = classHash.ClassC || rec.ClassC || "";
+          var 係名 = classHash.ClassI || rec.ClassI || "";
+          var ADUSER = classHash.ClassE || rec.ClassE || "";
+          var 氏名 = classHash.ClassG || rec.ClassG || "";
+          var 接続帯域Raw = classHash.ClassJ || rec.ClassJ || "";
 
-        // 日付フォーマット
-        var 開始Raw = dateHash.DateB || rec.DateB || "";
-        var 終了Raw = dateHash.DateC || rec.DateC || "";
-        var 開始 = 開始Raw ? new Date(開始Raw).toLocaleDateString("ja-JP") : "";
-        var 終了 = 終了Raw ? new Date(終了Raw).toLocaleDateString("ja-JP") : "";
-
-        // 残り日数計算
-        var 残り日数表示 = "";
-        var 残り日数スタイル = "";
-        if (終了Raw) {
-          var 終了日 = new Date(終了Raw);
-          終了日.setHours(0, 0, 0, 0);
-          var 差分ms = 終了日.getTime() - 今日.getTime();
-          var 残り日数 = Math.ceil(差分ms / (1000 * 60 * 60 * 24));
-          if (残り日数 < 0) {
-            残り日数表示 = "終了";
-            残り日数スタイル = "color:#999;";
-          } else if (残り日数 === 0) {
-            残り日数表示 = "本日終了";
-            残り日数スタイル = "color:#d9534f;font-weight:bold;";
-          } else if (残り日数 <= 30) {
-            残り日数表示 = 残り日数 + "日";
-            残り日数スタイル = "color:#d9534f;font-weight:bold;";
-          } else if (残り日数 <= 90) {
-            残り日数表示 = 残り日数 + "日";
-            残り日数スタイル = "color:#f0ad4e;";
-          } else {
-            残り日数表示 = 残り日数 + "日";
+          // 接続帯域を略称・色付きで変換
+          var 接続帯域HTML = "";
+          if (接続帯域Raw) {
+            var 帯域リスト = 接続帯域Raw.split("_");
+            var タグリスト = [];
+            帯域リスト.forEach(function(帯域) {
+              var 帯域トリム = 帯域.trim();
+              if (帯域トリム.indexOf("インターネット") >= 0) {
+                タグリスト.push("<span style='background:#e8f7e8;color:#2e7d32;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:3px;'>ＩＨ</span>");
+              } else if (帯域トリム.indexOf("LGWAN") >= 0) {
+                タグリスト.push("<span style='background:#e6f0ff;color:#1565c0;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:3px;'>ＬＧ</span>");
+              } else if (帯域トリム.indexOf("個人番号") >= 0 || 帯域トリム.indexOf("基幹") >= 0) {
+                タグリスト.push("<span style='background:#ffe5e5;color:#c62828;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:3px;'>基幹</span>");
+              }
+            });
+            接続帯域HTML = タグリスト.join("");
           }
-        }
 
-        var tr = document.createElement("tr");
-        tr.innerHTML = [
-          "<td style='padding:8px;border:1px solid #ddd;'>" + 課名 + "</td>",
-          "<td style='padding:8px;border:1px solid #ddd;'>" + 係名 + "</td>",
-          "<td style='padding:8px;border:1px solid #ddd;'>" + ADUSER + "</td>",
-          "<td style='padding:8px;border:1px solid #ddd;'>" + 氏名 + "</td>",
-          "<td style='padding:8px;border:1px solid #ddd;'>" + 開始 + "</td>",
-          "<td style='padding:8px;border:1px solid #ddd;'>" + 終了 + "</td>",
-          "<td style='padding:8px;border:1px solid #ddd;" + 残り日数スタイル + "'>" + 残り日数表示 + "</td>",
-          "<td style='padding:8px;border:1px solid #ddd;'>" + 接続帯域HTML + "</td>"
-        ].join("");
-        tbody.appendChild(tr);
-      });
-      table.appendChild(tbody);
+          // 日付フォーマット
+          var 開始Raw = dateHash.DateB || rec.DateB || "";
+          var 終了Raw = dateHash.DateC || rec.DateC || "";
+          var 開始 = 開始Raw ? new Date(開始Raw).toLocaleDateString("ja-JP") : "";
+          var 終了 = 終了Raw ? new Date(終了Raw).toLocaleDateString("ja-JP") : "";
+
+          // 残り日数表示
+          var 残り日数表示 = "";
+          var 残り日数スタイル = "";
+          var 残り日数 = rec._残り日数;
+          if (残り日数 !== 99999) {
+            if (残り日数 < 0) {
+              残り日数表示 = "終了";
+              残り日数スタイル = "color:#999;";
+            } else if (残り日数 === 0) {
+              残り日数表示 = "本日終了";
+              残り日数スタイル = "color:#d9534f;font-weight:bold;";
+            } else if (残り日数 <= 30) {
+              残り日数表示 = 残り日数 + "日";
+              残り日数スタイル = "color:#d9534f;font-weight:bold;";
+            } else if (残り日数 <= 90) {
+              残り日数表示 = 残り日数 + "日";
+              残り日数スタイル = "color:#f0ad4e;";
+            } else {
+              残り日数表示 = 残り日数 + "日";
+            }
+          }
+
+          var tr = document.createElement("tr");
+          tr.innerHTML = [
+            "<td style='padding:8px;border:1px solid #ddd;'>" + 課名 + "</td>",
+            "<td style='padding:8px;border:1px solid #ddd;'>" + 係名 + "</td>",
+            "<td style='padding:8px;border:1px solid #ddd;'>" + ADUSER + "</td>",
+            "<td style='padding:8px;border:1px solid #ddd;'>" + 氏名 + "</td>",
+            "<td style='padding:8px;border:1px solid #ddd;'>" + 開始 + "</td>",
+            "<td style='padding:8px;border:1px solid #ddd;'>" + 終了 + "</td>",
+            "<td style='padding:8px;border:1px solid #ddd;" + 残り日数スタイル + "'>" + 残り日数表示 + "</td>",
+            "<td style='padding:8px;border:1px solid #ddd;'>" + 接続帯域HTML + "</td>"
+          ].join("");
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+      }
+
+      // 初期表示
+      generateRows(records);
+
+      // 残り日数ヘッダーにクリックイベントを追加
+      setTimeout(function() {
+        var sortHeader = document.getElementById("sort-remaining-days");
+        if (sortHeader) {
+          sortHeader.onclick = function() {
+            sortAsc = !sortAsc;
+            records.sort(function(a, b) {
+              return sortAsc ? (a._残り日数 - b._残り日数) : (b._残り日数 - a._残り日数);
+            });
+            sortHeader.textContent = "残り日数 " + (sortAsc ? "▲" : "▼");
+            generateRows(records);
+          };
+        }
+      }, 0);
 
       tableContainer.appendChild(table);
       container.appendChild(tableContainer);
