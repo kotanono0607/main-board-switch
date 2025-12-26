@@ -2892,15 +2892,16 @@ if (window.DEBUG_VERBOSE) {
     // ★ 情報機器管理と同じ位置（left: 500px）に配置
     var menuLeft = "500px";
     var menuTop = "64px";  // タブバーの下と同じ位置
+    var menuWidth = Math.round(枠.baseWidth * 1.2);  // 20%拡大
 
-    // メニューコンテナ作成（情報機器管理と同じ位置・サイズ）
+    // メニューコンテナ作成（情報機器管理と同じ位置）
     var menu = document.createElement("div");
     menu.id = "kanban-main-menu";
     menu.style.cssText = [
       "position: fixed",
       "top: " + menuTop,
       "left: " + menuLeft,
-      "width: " + 枠.baseWidth + "px",
+      "width: " + menuWidth + "px",
       "height: " + 枠.baseHeight + "px",
       "background: #fff",
       "border-radius: 12px",
@@ -3001,15 +3002,16 @@ if (window.DEBUG_VERBOSE) {
     // ★ 情報機器管理と同じ位置（left: 500px）に配置
     var containerLeft = "500px";
     var containerTop = "64px";  // タブバーの下と同じ位置
+    var containerWidth = Math.round(枠.baseWidth * 1.2);  // 20%拡大
 
-    // コンテナ作成（情報機器管理と同じ位置・サイズ）
+    // コンテナ作成（情報機器管理と同じ位置）
     var container = document.createElement("div");
     container.id = "kaikei-nendo-container";
     container.style.cssText = [
       "position: fixed",
       "top: " + containerTop,
       "left: " + containerLeft,
-      "width: " + 枠.baseWidth + "px",
+      "width: " + containerWidth + "px",
       "height: " + 枠.baseHeight + "px",
       "background: #fff",
       "border-radius: 12px",
