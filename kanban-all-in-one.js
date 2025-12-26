@@ -2892,7 +2892,7 @@ if (window.DEBUG_VERBOSE) {
     // ★ 情報機器管理と同じ位置（left: 500px）に配置
     var menuLeft = "500px";
     var menuTop = "64px";  // タブバーの下と同じ位置
-    var menuWidth = Math.round(枠.baseWidth * 1.2);  // 20%拡大
+    var menuWidth = Math.round(枠.baseWidth * 1.25);  // 25%拡大
 
     // メニューコンテナ作成（情報機器管理と同じ位置）
     var menu = document.createElement("div");
@@ -3002,7 +3002,7 @@ if (window.DEBUG_VERBOSE) {
     // ★ 情報機器管理と同じ位置（left: 500px）に配置
     var containerLeft = "500px";
     var containerTop = "64px";  // タブバーの下と同じ位置
-    var containerWidth = Math.round(枠.baseWidth * 1.2);  // 20%拡大
+    var containerWidth = Math.round(枠.baseWidth * 1.25);  // 25%拡大
 
     // コンテナ作成（情報機器管理と同じ位置）
     var container = document.createElement("div");
@@ -3084,7 +3084,7 @@ if (window.DEBUG_VERBOSE) {
       var 今日 = new Date();
       今日.setHours(0, 0, 0, 0);
 
-      // 残り日数を計算してレコードに追加
+      // 残り日数と状況を計算してレコードに追加
       records.forEach(function(rec) {
         var dateHash = rec.DateHash || {};
         var 終了Raw = dateHash.DateC || rec.DateC || "";
@@ -3095,6 +3095,14 @@ if (window.DEBUG_VERBOSE) {
           rec._残り日数 = Math.ceil(差分ms / (1000 * 60 * 60 * 24));
         } else {
           rec._残り日数 = 99999; // 終了日未設定は最後に
+        }
+
+        // 状況 (Status: 100=任期中, 900=終了)
+        var status = rec.Status || 100;
+        if (status === 900) {
+          rec._状況HTML = "<span style='background:#f5f5f5;color:#999;padding:2px 8px;border-radius:3px;font-size:11px;'>終了</span>";
+        } else {
+          rec._状況HTML = "<span style='background:#e8f7e8;color:#2e7d32;padding:2px 8px;border-radius:3px;font-size:11px;'>任期中</span>";
         }
       });
 
@@ -3129,6 +3137,7 @@ if (window.DEBUG_VERBOSE) {
         "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>任用期間開始</th>",
         "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>任用期間終了</th>",
         "<th style='padding:10px;border:1px solid #ddd;text-align:left;cursor:pointer;' id='sort-remaining-days'>残り日数 ▲</th>",
+        "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>状況</th>",
         "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>接続帯域</th>",
         "</tr>"
       ].join("");
@@ -3205,6 +3214,7 @@ if (window.DEBUG_VERBOSE) {
             "<td style='padding:8px;border:1px solid #ddd;'>" + 開始 + "</td>",
             "<td style='padding:8px;border:1px solid #ddd;'>" + 終了 + "</td>",
             "<td style='padding:8px;border:1px solid #ddd;" + 残り日数スタイル + "'>" + 残り日数表示 + "</td>",
+            "<td style='padding:8px;border:1px solid #ddd;'>" + rec._状況HTML + "</td>",
             "<td style='padding:8px;border:1px solid #ddd;'>" + 接続帯域HTML + "</td>"
           ].join("");
           tbody.appendChild(tr);
