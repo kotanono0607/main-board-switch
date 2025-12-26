@@ -2918,6 +2918,28 @@ if (window.DEBUG_VERBOSE) {
       "transform-origin: top left"
     ].join(";");
 
+    // 編集ボタン（右上）
+    var editBtn = document.createElement("a");
+    editBtn.textContent = "編集";
+    editBtn.href = "http://gwsv.nanyo-ad.ad.nanyo/items/45172";
+    editBtn.target = "_blank";
+    editBtn.style.cssText = [
+      "position: absolute",
+      "top: 12px",
+      "right: 12px",
+      "padding: 4px 10px",
+      "font-size: 12px",
+      "background: #f5f5f5",
+      "color: #666",
+      "border: 1px solid #ddd",
+      "border-radius: 4px",
+      "text-decoration: none",
+      "cursor: pointer"
+    ].join(";");
+    editBtn.onmouseover = function() { editBtn.style.background = "#e8e8e8"; };
+    editBtn.onmouseout = function() { editBtn.style.background = "#f5f5f5"; };
+    menu.appendChild(editBtn);
+
     // タイトル
     var title = document.createElement("h1");
     title.textContent = "メニュー";
@@ -3076,6 +3098,12 @@ if (window.DEBUG_VERBOSE) {
     try {
       var records = await window.PleasanterApi_116426.レコード取得();
       console.log("会計年度管理: " + records.length + "件取得");
+
+      // Status=900（終了）を除外
+      records = records.filter(function(rec) {
+        return rec.Status !== 900;
+      });
+      console.log("会計年度管理: 終了除外後 " + records.length + "件");
 
       // ローディング削除
       loadingDiv.remove();
