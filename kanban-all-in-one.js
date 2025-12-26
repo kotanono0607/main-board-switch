@@ -3102,6 +3102,7 @@ if (window.DEBUG_VERBOSE) {
         "<tr style='background:#f5f5f5;'>",
         "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>課名</th>",
         "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>係名</th>",
+        "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>ADUSER</th>",
         "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>氏名</th>",
         "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>任用期間開始</th>",
         "<th style='padding:10px;border:1px solid #ddd;text-align:left;'>任用期間終了</th>",
@@ -3119,6 +3120,7 @@ if (window.DEBUG_VERBOSE) {
 
         var 課名 = classHash.ClassC || rec.ClassC || "";
         var 係名 = classHash.ClassI || rec.ClassI || "";
+        var ADUSER = classHash.ClassE || rec.ClassE || "";
         var 氏名 = classHash.ClassG || rec.ClassG || "";
         var 接続帯域Raw = classHash.ClassJ || rec.ClassJ || "";
 
@@ -3176,6 +3178,7 @@ if (window.DEBUG_VERBOSE) {
         tr.innerHTML = [
           "<td style='padding:8px;border:1px solid #ddd;'>" + 課名 + "</td>",
           "<td style='padding:8px;border:1px solid #ddd;'>" + 係名 + "</td>",
+          "<td style='padding:8px;border:1px solid #ddd;'>" + ADUSER + "</td>",
           "<td style='padding:8px;border:1px solid #ddd;'>" + 氏名 + "</td>",
           "<td style='padding:8px;border:1px solid #ddd;'>" + 開始 + "</td>",
           "<td style='padding:8px;border:1px solid #ddd;'>" + 終了 + "</td>",
