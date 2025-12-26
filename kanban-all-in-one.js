@@ -2756,19 +2756,85 @@ if (window.DEBUG_VERBOSE) {
     }
   }
 
+  /* ========================= メニュー画面 ========================= */
+
+  function メニュー画面表示() {
+    // 既存のメニューがあれば何もしない
+    if (document.getElementById("kanban-main-menu")) return;
+
+    // メニューコンテナ作成
+    var menu = document.createElement("div");
+    menu.id = "kanban-main-menu";
+    menu.style.cssText = [
+      "position: fixed",
+      "top: 50%",
+      "left: 50%",
+      "transform: translate(-50%, -50%)",
+      "background: #fff",
+      "border-radius: 12px",
+      "box-shadow: 0 8px 32px rgba(0,0,0,0.2)",
+      "padding: 40px 60px",
+      "z-index: 99999",
+      "text-align: center",
+      "font-family: 'Segoe UI', 'Meiryo', sans-serif"
+    ].join(";");
+
+    // タイトル
+    var title = document.createElement("h1");
+    title.textContent = "業務システムメニュー";
+    title.style.cssText = "margin: 0 0 30px 0; font-size: 24px; color: #333;";
+    menu.appendChild(title);
+
+    // ボタンコンテナ
+    var btnContainer = document.createElement("div");
+    btnContainer.style.cssText = "display: flex; flex-direction: column; gap: 15px;";
+
+    // 情報機器管理ボタン
+    var btn = document.createElement("button");
+    btn.textContent = "情報機器管理";
+    btn.style.cssText = [
+      "padding: 15px 40px",
+      "font-size: 18px",
+      "background: #4a90d9",
+      "color: #fff",
+      "border: none",
+      "border-radius: 8px",
+      "cursor: pointer",
+      "transition: background 0.2s"
+    ].join(";");
+    btn.onmouseover = function() { btn.style.background = "#3a7bc8"; };
+    btn.onmouseout = function() { btn.style.background = "#4a90d9"; };
+    btn.onclick = function() {
+      // メニューを非表示
+      menu.style.display = "none";
+      // タブマネージャー起動
+      console.log("▶ 情報機器管理を起動します");
+      setTimeout(タブマネージャー起動, 100);
+    };
+    btnContainer.appendChild(btn);
+
+    menu.appendChild(btnContainer);
+    document.body.appendChild(menu);
+
+    console.log("✓ メニュー画面を表示しました");
+  }
+
+  // メニュー画面を公開（外部から呼び出し可能に）
+  window.メニュー画面表示 = メニュー画面表示;
+
   if (document.readyState === "loading") {
     // DOMがまだ読み込み中の場合は、DOMContentLoadedを待つ
     document.addEventListener("DOMContentLoaded", function 起動実行() {
-      if (window.DEBUG_VERBOSE) console.log("▶ DOMContentLoaded: タブマネージャー起動を開始します");
-      setTimeout(タブマネージャー起動, 100); // わずかな遅延で確実に初期化
+      if (window.DEBUG_VERBOSE) console.log("▶ DOMContentLoaded: メニュー画面を表示します");
+      setTimeout(メニュー画面表示, 100);
     });
   } else if (document.readyState === "interactive" || document.readyState === "complete") {
     // DOMが既に読み込まれている場合は即座に実行
-    console.log("▶ DOM既に読み込み済み: タブマネージャー起動を開始します");
-    setTimeout(タブマネージャー起動, 100);
+    console.log("▶ DOM既に読み込み済み: メニュー画面を表示します");
+    setTimeout(メニュー画面表示, 100);
   }
 })();
 
-if (window.DEBUG_VERBOSE) console.log("✓ 自動起動設定完了（タブマネージャーを使用）");
+if (window.DEBUG_VERBOSE) console.log("✓ メニュー画面設定完了");
 
 })(window);
