@@ -2201,9 +2201,9 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanBootstrap 初期化完了");
       transformOrigin: "top left"
     });
 
-    // 戻るボタンを追加
+    // 戻るボタンを作成（後で右端に追加）
     const backButton = document.createElement("button");
-    backButton.textContent = "← 戻る";
+    backButton.textContent = "戻る →";
     Object.assign(backButton.style, {
       border: "none",
       background: "#666",
@@ -2213,7 +2213,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanBootstrap 初期化完了");
       fontWeight: "500",
       padding: "8px 16px",
       transition: "all 0.2s",
-      borderRight: "1px solid #ccc"
+      borderLeft: "1px solid #ccc"
     });
     backButton.addEventListener("mouseenter", () => {
       backButton.style.background = "#555";
@@ -2246,7 +2246,6 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanBootstrap 初期化完了");
       }
       console.log("▶ メニューに戻りました");
     });
-    tabBar.appendChild(backButton);
 
     tabConfigs.forEach((config, index) => {
       const tabButton = document.createElement("button");
@@ -2262,7 +2261,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanBootstrap 初期化完了");
         fontWeight: "500",
         padding: "8px 16px",
         transition: "all 0.2s",
-        borderRight: index < tabConfigs.length - 1 ? "1px solid #ccc" : "none"
+        borderRight: "1px solid #ccc"
       });
 
       // ホバー効果
@@ -2284,6 +2283,9 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanBootstrap 初期化完了");
 
       tabBar.appendChild(tabButton);
     });
+
+    // 戻るボタンを右端に追加
+    tabBar.appendChild(backButton);
 
     document.body.appendChild(tabBar);
     return tabBar;
