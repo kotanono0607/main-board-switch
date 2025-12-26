@@ -2762,26 +2762,33 @@ if (window.DEBUG_VERBOSE) {
     // 既存のメニューがあれば何もしない
     if (document.getElementById("kanban-main-menu")) return;
 
-    // メニューコンテナ作成
+    // 設定から枠情報を取得
+    var 設定 = window.Kanban設定 || {};
+    var 枠 = 設定.枠 || { top: "100px", left: "700px", baseWidth: 950, baseHeight: 700 };
+
+    // メニューコンテナ作成（既存の枠設定に合わせる）
     var menu = document.createElement("div");
     menu.id = "kanban-main-menu";
     menu.style.cssText = [
       "position: fixed",
-      "top: 50%",
-      "left: 50%",
-      "transform: translate(-50%, -50%)",
+      "top: " + 枠.top,
+      "left: " + 枠.left,
+      "width: " + 枠.baseWidth + "px",
+      "height: " + 枠.baseHeight + "px",
       "background: #fff",
       "border-radius: 12px",
       "box-shadow: 0 8px 32px rgba(0,0,0,0.2)",
-      "padding: 40px 60px",
       "z-index: 99999",
-      "text-align: center",
+      "display: flex",
+      "flex-direction: column",
+      "align-items: center",
+      "justify-content: center",
       "font-family: 'Segoe UI', 'Meiryo', sans-serif"
     ].join(";");
 
     // タイトル
     var title = document.createElement("h1");
-    title.textContent = "業務システムメニュー";
+    title.textContent = "メニュー";
     title.style.cssText = "margin: 0 0 30px 0; font-size: 24px; color: #333;";
     menu.appendChild(title);
 
