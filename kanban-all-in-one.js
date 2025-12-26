@@ -2884,6 +2884,11 @@ if (window.DEBUG_VERBOSE) {
     var 設定 = window.Kanban設定 || {};
     var 枠 = 設定.枠 || { top: "100px", left: "700px", baseWidth: 950, baseHeight: 700 };
 
+    // ★ OS表示倍率対応：DPR（デバイスピクセル比）でスケーリング
+    var dpr = window.devicePixelRatio || 1;
+    var scale = 1 / dpr;
+    var transformStyle = dpr > 1 ? "scale(" + scale + ")" : "none";
+
     // メニューコンテナ作成（既存の枠設定に合わせる）
     var menu = document.createElement("div");
     menu.id = "kanban-main-menu";
@@ -2903,7 +2908,9 @@ if (window.DEBUG_VERBOSE) {
       "justify-content: flex-start",
       "padding-top: 60px",
       "box-sizing: border-box",
-      "font-family: 'Segoe UI', 'Meiryo', sans-serif"
+      "font-family: 'Segoe UI', 'Meiryo', sans-serif",
+      "transform: " + transformStyle,
+      "transform-origin: top left"
     ].join(";");
 
     // タイトル
@@ -2982,6 +2989,11 @@ if (window.DEBUG_VERBOSE) {
     var 設定 = window.Kanban設定 || {};
     var 枠 = 設定.枠 || { top: "100px", left: "700px", baseWidth: 950, baseHeight: 700 };
 
+    // ★ OS表示倍率対応：DPR（デバイスピクセル比）でスケーリング
+    var dpr = window.devicePixelRatio || 1;
+    var scale = 1 / dpr;
+    var transformStyle = dpr > 1 ? "scale(" + scale + ")" : "none";
+
     // コンテナ作成
     var container = document.createElement("div");
     container.id = "kaikei-nendo-container";
@@ -2998,7 +3010,9 @@ if (window.DEBUG_VERBOSE) {
       "display: flex",
       "flex-direction: column",
       "font-family: 'Segoe UI', 'Meiryo', sans-serif",
-      "overflow: hidden"
+      "overflow: hidden",
+      "transform: " + transformStyle,
+      "transform-origin: top left"
     ].join(";");
 
     // ヘッダー（タイトル + 戻るボタン）
