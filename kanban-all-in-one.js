@@ -1623,7 +1623,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanMenu 初期化完了");
     return { x: 丸(relX), y: 丸(relY) };
   }
 
-  function 構築_updates(x, y, area) {
+  function 構築_updates(x, y, area, 新所属名) {
     const S = w.Kanban設定 || {};
     const 直下 = !!S.書込キー直下;
     const KX = (area === "右")
@@ -1633,18 +1633,30 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanMenu 初期化完了");
       ? (S.フィールド名_Y右 || "NumY2")
       : (S.フィールド名_Y   || "NumY");
 
+    // ★ ClassHash の ClassO（所属名）も更新
+    let ch = {};
+    if (新所属名) {
+      ch.ClassO = 新所属名;
+    }
+
     if (直下) {
-      const obj = {}; obj[KX] = x; obj[KY] = y; return obj;
+      const obj = {}; obj[KX] = x; obj[KY] = y;
+      if (新所属名) obj.ClassHash = ch;
+      return obj;
     }
 
     if (w.PleasanterUpdateApi && typeof w.PleasanterUpdateApi.ハッシュ更新 === "function") {
       let nh = "{}";
       nh = w.PleasanterUpdateApi.ハッシュ更新(nh, KX, x);
       nh = w.PleasanterUpdateApi.ハッシュ更新(nh, KY, y);
-      return { NumHash: nh };
+      const result = { NumHash: nh };
+      if (新所属名) result.ClassHash = ch;
+      return result;
     }
     const nh = {}; nh[KX] = x; nh[KY] = y;
-    return { NumHash: nh };
+    const result = { NumHash: nh };
+    if (新所属名) result.ClassHash = ch;
+    return result;
   }
 
   function 取得_画面キャッシュ() {
@@ -1682,8 +1694,23 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanMenu 初期化完了");
 
     console.log(`▶ 座標変換: パネル相対(${Math.round(pixelX)}, ${Math.round(pixelY)}) → 画像相対(${Math.round(imgRelativeX)}, ${Math.round(imgRelativeY)}) → パーセンテージ(${percentX}%, ${percentY}%) / 画像表示サイズ(${Math.round(imgDisplay.width)}x${Math.round(imgDisplay.height)})`);
 
-    const updates = 構築_updates(percentX, percentY, area);
-    console.log(`▶ 保存準備 id=${id}, area=${area}, updates=`, updates);
+    // ★ ドロップ先に応じて所属名（ClassO）を決定
+    const S = w.Kanban設定 || {};
+    let 新所属名 = null;
+    if (area === "右") {
+      // 右パネル（サーバー室）にドロップ → 所属を「サーバー室」に変更
+      新所属名 = (S?.固定右フレーム?.画像名) || "サーバー室";
+      console.log(`▶ 右パネルへのドロップ: 所属を「${新所属名}」に変更`);
+    } else if (area === "左") {
+      // 左パネルにドロップ → 現在選択中の所属名に変更
+      新所属名 = (w.Kanban現在 && w.Kanban現在.左画像名) || null;
+      if (新所属名) {
+        console.log(`▶ 左パネルへのドロップ: 所属を「${新所属名}」に変更`);
+      }
+    }
+
+    const updates = 構築_updates(percentX, percentY, area, 新所属名);
+    console.log(`▶ 保存準備 id=${id}, area=${area}, 新所属名=${新所属名}, updates=`, updates);
 
     if (!w.PleasanterUpdateApi || typeof w.PleasanterUpdateApi.レコード更新 !== "function") {
       console.warn("保存スキップ: PleasanterUpdateApi.レコード更新 が未定義");
@@ -1698,7 +1725,6 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanMenu 初期化完了");
       if (list) {
         const rec = list.find(r => Number(r.ResultId ?? r.IssueId) === Number(id));
         if (rec) {
-          const S = w.Kanban設定 || {};
           const KX = (area === "右") ? (S.フィールド名_X右 || "NumX2") : (S.フィールド名_X || "NumX");
           const KY = (area === "右") ? (S.フィールド名_Y右 || "NumY2") : (S.フィールド名_Y || "NumY");
           // ★ キャッシュにもパーセンテージを保存
@@ -1709,10 +1735,20 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanMenu 初期化完了");
             if (!nh || typeof nh !== "object") nh = {};
             nh[KX] = percentX; nh[KY] = percentY; rec.NumHash = nh;
           }
+          // ★ キャッシュの所属名（ClassO）も更新
+          if (新所属名) {
+            let ch = rec.ClassHash;
+            try { if (typeof ch === "string") ch = JSON.parse(ch || "{}"); } catch { ch = {}; }
+            if (!ch || typeof ch !== "object") ch = {};
+            ch.ClassO = 新所属名;
+            rec.ClassHash = ch;
+            rec.ClassO = 新所属名;  // 直下プロパティも更新
+            console.log(`▶ キャッシュ更新: id=${id}, ClassO=${新所属名}`);
+          }
           if (typeof rec.Revision === "number") rec.Revision += 1;
         }
       }
-      console.log(`▶ 保存成功 id=${id} (${area}) x=${percentX}%, y=${percentY}%`);
+      console.log(`▶ 保存成功 id=${id} (${area}) x=${percentX}%, y=${percentY}%` + (新所属名 ? `, ClassO=${新所属名}` : ""));
     } catch (e) {
       console.error("▶ 保存失敗:", e && e.message ? e.message : e);
     }
