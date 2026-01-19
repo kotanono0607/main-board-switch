@@ -1983,7 +1983,11 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanDropSave 初期化完了");
 
       let x, y; // パネル相対のピクセル座標
 
-      if (!Number.isFinite(storedX) || !Number.isFinite(storedY)) {
+      // ★ 右パネル（サーバー室）は常にグリッド配置（自動整列）
+      if (panel === "右") {
+        const p = パネル内座標(pr.width, i);
+        x = p.x; y = p.y;
+      } else if (!Number.isFinite(storedX) || !Number.isFinite(storedY)) {
         // 座標が未設定の場合：グリッド配置
         const p = パネル内座標(pr.width, i);
         x = p.x; y = p.y;
