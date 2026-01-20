@@ -1939,8 +1939,18 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanDropSave 初期化完了");
 
   /* ========================= 座標・配置 ========================= */
 
+  // 左パネル用（従来通り）
   function パネル内座標(panelWidth, idx) {
     const 開始X = 20, 開始Y = 20, 間隔X = 160, 間隔Y = 56;
+    const 列数 = Math.max(1, Math.floor((panelWidth - 開始X) / 間隔X));
+    const col = idx % 列数;
+    const row = Math.floor(idx / 列数);
+    return { x: 開始X + col * 間隔X, y: 開始Y + row * 間隔Y };
+  }
+
+  // 右パネル用（サーバー室：幅が狭いので間隔を詰める）
+  function パネル内座標_右(panelWidth, idx) {
+    const 開始X = 10, 開始Y = 10, 間隔X = 90, 間隔Y = 28;
     const 列数 = Math.max(1, Math.floor((panelWidth - 開始X) / 間隔X));
     const col = idx % 列数;
     const row = Math.floor(idx / 列数);
@@ -1985,11 +1995,11 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanDropSave 初期化完了");
 
       // ★ 右パネル（サーバー室）は常にグリッド配置（自動整列）
       if (panel === "右") {
-        const p = パネル内座標(pr.width, i);
+        const p = パネル内座標_右(pr.width, i);
         x = p.x; y = p.y;
         // デバッグログ
-        if (i < 3) {
-          console.log(`[右パネル自動整列] i=${i}, panelWidth=${Math.round(pr.width)}, 計算座標=(${x}, ${y})`);
+        if (i < 5) {
+          console.log(`[右パネル自動整列] i=${i}, panelWidth=${Math.round(pr.width)}, 列数=${Math.floor((pr.width - 10) / 90)}, 座標=(${x}, ${y})`);
         }
       } else if (!Number.isFinite(storedX) || !Number.isFinite(storedY)) {
         // 座標が未設定の場合：グリッド配置
