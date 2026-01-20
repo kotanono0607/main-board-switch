@@ -2173,7 +2173,18 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanDropSave 初期化完了");
     recs2.forEach(r => r._tableId = 45173);
     recs3.forEach(r => r._tableId = 121624);
 
-    const records = [...recs1, ...recs2, ...recs3];
+    // ★ ClassK=「庁外」のレコードを除外（PC台帳のみ）
+    const recs1_filtered = recs1.filter(r => {
+      const ch = 取得_ClassHash(r);
+      const classK = 正規化(ch.ClassK || r.ClassK || "");
+      return classK !== "庁外";
+    });
+    const 庁外件数 = recs1.length - recs1_filtered.length;
+    if (庁外件数 > 0) {
+      console.log(`[初期化] 庁外レコードを除外: ${庁外件数}件`);
+    }
+
+    const records = [...recs1_filtered, ...recs2, ...recs3];
 
     if (DEBUG) {
       console.log("統合レコード件数:", records.length);
@@ -2604,6 +2615,9 @@ if (window.DEBUG_VERBOSE) {
           // サーバー室集計
           let serverRoomCount = 0;
 
+          // ★ 庁外集計（ClassK=庁外のPC台数）
+          let chogaiCount = 0;
+
           // 画像候補の部署名リストを取得
           const deptNames = (s.画像候補 || []).map(function(x) { return x?.名前; }).filter(Boolean);
 
@@ -2615,6 +2629,15 @@ if (window.DEBUG_VERBOSE) {
 
             // ClassJを取得（会計年度判定用）
             const classJ = safeGetClass(r, "ClassJ");
+
+            // ★ ClassKを取得（庁外判定用）
+            const classK = safeGetClass(r, "ClassK");
+
+            // ★ 庁外カウント（45208テーブルのClassK=庁外）
+            if (tid === 45208 && classK === "庁外") {
+              chogaiCount++;
+              continue; // 庁外は他の集計から除外
+            }
 
             // テーブル別
             if (byTable[tid] !== undefined) byTable[tid]++;
@@ -2665,10 +2688,10 @@ if (window.DEBUG_VERBOSE) {
             }
           }
 
-          const total = recs.length;
+          const total = recs.length - chogaiCount; // 庁外を除いた合計
           const pcTotal = byTable[45208];
 
-          return { byTable, bySegment, byDeptDetail, deptList, serverRoomCount, pcTotal, total };
+          return { byTable, bySegment, byDeptDetail, deptList, serverRoomCount, pcTotal, total, chogaiCount };
         }
 
         // プログレスバーのHTML生成
@@ -2763,16 +2786,23 @@ if (window.DEBUG_VERBOSE) {
           }
           html += '</div></div>';
 
-          // --- サーバー室状況 ---
+          // --- サーバー室状況 & 庁外 ---
           html += '<div>';
-          html += '<h3 style="margin:0 0 12px 0;font-size:15px;color:#333;border-bottom:2px solid #f57c00;padding-bottom:6px;">🖥️ サーバー室状況</h3>';
+          html += '<h3 style="margin:0 0 12px 0;font-size:15px;color:#333;border-bottom:2px solid #f57c00;padding-bottom:6px;">🖥️ サーバー室 / 庁外</h3>';
           html += '<div style="background:#fff;border-radius:6px;padding:12px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">';
+          // サーバー室
           html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
-          html += '<span style="font-size:13px;">配置済みPC</span>';
+          html += '<span style="font-size:13px;">サーバー室</span>';
           html += '<span style="font-size:22px;font-weight:700;color:#f57c00;">' + data.serverRoomCount + '件</span>';
           html += '</div>';
           html += progressBar(data.serverRoomCount, data.pcTotal, '#ff9800');
-          html += '<div style="text-align:right;font-size:10px;color:#999;margin-top:4px;">全PC台数: ' + data.pcTotal + '件</div>';
+          // 庁外
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;margin-bottom:8px;">';
+          html += '<span style="font-size:13px;">庁外（除外）</span>';
+          html += '<span style="font-size:22px;font-weight:700;color:#9e9e9e;">' + data.chogaiCount + '件</span>';
+          html += '</div>';
+          html += progressBar(data.chogaiCount, data.pcTotal + data.chogaiCount, '#9e9e9e');
+          html += '<div style="text-align:right;font-size:10px;color:#999;margin-top:4px;">全PC台数（庁外除く）: ' + data.pcTotal + '件</div>';
           html += '</div></div>';
 
           html += '</div>'; // 上段グリッド終了
