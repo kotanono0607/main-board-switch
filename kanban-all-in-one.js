@@ -62,6 +62,7 @@
       { 名前: "監査事務局",       url: "http://gwsv.nanyo-ad.ad.nanyo/binaries/50a434497537452c99208c575afa5e8e/download" },
       { 名前: "農委事務局",       url: "http://gwsv.nanyo-ad.ad.nanyo/binaries/9caa61ec657040449e5277e9306d2215/download" },
       { 名前: "管理職",           url: "http://gwsv.nanyo-ad.ad.nanyo/binaries/d6ca27a191c24d288b0e6c8587c2c509/download" },
+      { 名前: "R2ストック",       url: "http://gwsv.nanyo-ad.ad.nanyo/binaries/b6968830c71d4a65bb9ceb8dbcdf2501/download" },
       { 名前: "その他",           url: "http://gwsv.nanyo-ad.ad.nanyo/binaries/198ed8c7035a4215bf94475be294176f/download" }
     ],
     画像切替でラベルを消す: true,
