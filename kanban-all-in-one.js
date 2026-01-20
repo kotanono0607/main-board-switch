@@ -1705,8 +1705,11 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanMenu 初期化完了");
     } else if (area === "左") {
       // 左パネルにドロップ → 現在選択中の所属名に変更
       新所属名 = (w.Kanban現在 && w.Kanban現在.左画像名) || null;
+      console.log(`▶ 左パネルへのドロップ: Kanban現在=`, w.Kanban現在, `, 左画像名=${新所属名}`);
       if (新所属名) {
         console.log(`▶ 左パネルへのドロップ: 所属を「${新所属名}」に変更`);
+      } else {
+        console.warn(`▶ 左パネルへのドロップ: 所属名が取得できません（Kanban現在.左画像名が未設定）`);
       }
     }
 
