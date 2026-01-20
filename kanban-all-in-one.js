@@ -1430,6 +1430,13 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanLabels 初期化完了");
         try {
           await w.画像ロード待機(ctx.左画像);
           console.log("[画像復元] 左画像のロード完了:", last);
+          // ★ URLから画像名を逆引きして Kanban現在.左画像名 を設定
+          const found = (s.画像候補 || []).find(item => item.url === last);
+          if (found && found.名前) {
+            w.Kanban現在 = w.Kanban現在 || {};
+            w.Kanban現在.左画像名 = found.名前;
+            console.log("[画像復元] Kanban現在.左画像名 を設定:", found.名前);
+          }
         } catch (err) {
           console.warn("[画像復元] 左画像のロード失敗:", err.message);
         }
