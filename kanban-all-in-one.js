@@ -1987,6 +1987,10 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanDropSave 初期化完了");
       if (panel === "右") {
         const p = パネル内座標(pr.width, i);
         x = p.x; y = p.y;
+        // デバッグログ
+        if (i < 3) {
+          console.log(`[右パネル自動整列] i=${i}, panelWidth=${Math.round(pr.width)}, 計算座標=(${x}, ${y})`);
+        }
       } else if (!Number.isFinite(storedX) || !Number.isFinite(storedY)) {
         // 座標が未設定の場合：グリッド配置
         const p = パネル内座標(pr.width, i);
