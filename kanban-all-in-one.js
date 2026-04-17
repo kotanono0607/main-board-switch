@@ -1459,6 +1459,9 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanMenu 初期化完了");
 
   function 丸(v) { return Math.round(Number(v) || 0); }
 
+  // テーブルIDごとの所属キー（読み取り側と揃える）
+  const 所属キーMap = { 45208: "ClassO", 45173: "ClassA", 121624: "ClassB" };
+
   // ===== 座標変換関数（パーセンテージベース） =====
 
   // ピクセル座標をパーセンテージに変換（保存時）
@@ -1631,7 +1634,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanMenu 初期化完了");
     return { x: 丸(relX), y: 丸(relY) };
   }
 
-  function 構築_updates(x, y, area, 新所属名) {
+  function 構築_updates(x, y, area, 新所属名, 所属キー) {
     const S = w.Kanban設定 || {};
     const 直下 = !!S.書込キー直下;
     const KX = (area === "右")
@@ -1641,10 +1644,11 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanMenu 初期化完了");
       ? (S.フィールド名_Y右 || "NumY2")
       : (S.フィールド名_Y   || "NumY");
 
-    // ★ ClassHash の ClassO（所属名）も更新
+    // ★ ClassHash の所属キー（テーブル別: 45208→ClassO / 45173→ClassA / 121624→ClassB）を更新
+    const KC = 所属キー || "ClassO";
     let ch = {};
     if (新所属名) {
-      ch.ClassO = 新所属名;
+      ch[KC] = 新所属名;
     }
 
     if (直下) {
@@ -1702,7 +1706,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanMenu 初期化完了");
 
     console.log(`▶ 座標変換: パネル相対(${Math.round(pixelX)}, ${Math.round(pixelY)}) → 画像相対(${Math.round(imgRelativeX)}, ${Math.round(imgRelativeY)}) → パーセンテージ(${percentX}%, ${percentY}%) / 画像表示サイズ(${Math.round(imgDisplay.width)}x${Math.round(imgDisplay.height)})`);
 
-    // ★ ドロップ先に応じて所属名（ClassO）を決定
+    // ★ ドロップ先に応じて所属名を決定
     const S = w.Kanban設定 || {};
     let 新所属名 = null;
     if (area === "右") {
@@ -1720,8 +1724,14 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanMenu 初期化完了");
       }
     }
 
-    const updates = 構築_updates(percentX, percentY, area, 新所属名);
-    console.log(`▶ 保存準備 id=${id}, area=${area}, 新所属名=${新所属名}, updates=`, updates);
+    // ★ 対象レコードの _tableId から所属キーを決定（45208→ClassO / 45173→ClassA / 121624→ClassB）
+    const 事前キャッシュ = 取得_画面キャッシュ();
+    const 事前rec = 事前キャッシュ && 事前キャッシュ.find(r => Number(r.ResultId ?? r.IssueId) === Number(id));
+    const tid = 事前rec && 事前rec._tableId;
+    const 所属キー = 所属キーMap[tid] || "ClassO";
+
+    const updates = 構築_updates(percentX, percentY, area, 新所属名, 所属キー);
+    console.log(`▶ 保存準備 id=${id}, area=${area}, tid=${tid}, 所属キー=${所属キー}, 新所属名=${新所属名}, updates=`, updates);
 
     if (!w.PleasanterUpdateApi || typeof w.PleasanterUpdateApi.レコード更新 !== "function") {
       console.warn("保存スキップ: PleasanterUpdateApi.レコード更新 が未定義");
@@ -1746,20 +1756,20 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanMenu 初期化完了");
             if (!nh || typeof nh !== "object") nh = {};
             nh[KX] = percentX; nh[KY] = percentY; rec.NumHash = nh;
           }
-          // ★ キャッシュの所属名（ClassO）も更新
+          // ★ キャッシュの所属名もテーブル別キーで更新
           if (新所属名) {
             let ch = rec.ClassHash;
             try { if (typeof ch === "string") ch = JSON.parse(ch || "{}"); } catch { ch = {}; }
             if (!ch || typeof ch !== "object") ch = {};
-            ch.ClassO = 新所属名;
+            ch[所属キー] = 新所属名;
             rec.ClassHash = ch;
-            rec.ClassO = 新所属名;  // 直下プロパティも更新
-            console.log(`▶ キャッシュ更新: id=${id}, ClassO=${新所属名}`);
+            rec[所属キー] = 新所属名;  // 直下プロパティも更新
+            console.log(`▶ キャッシュ更新: id=${id}, ${所属キー}=${新所属名}`);
           }
           if (typeof rec.Revision === "number") rec.Revision += 1;
         }
       }
-      console.log(`▶ 保存成功 id=${id} (${area}) x=${percentX}%, y=${percentY}%` + (新所属名 ? `, ClassO=${新所属名}` : ""));
+      console.log(`▶ 保存成功 id=${id} (${area}) x=${percentX}%, y=${percentY}%` + (新所属名 ? `, ${所属キー}=${新所属名}` : ""));
     } catch (e) {
       console.error("▶ 保存失敗:", e && e.message ? e.message : e);
     }
