@@ -1168,8 +1168,8 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanLabels 初期化完了");
 })(window);
 
 /* ===============================================================
- * 6-2. PLEASANTER-API-116426.JS
- * テーブル116426 データ取得（会計年度管理用）
+ * 6-2. PLEASANTER-API-130695.JS
+ * テーブル130695 データ取得（会計年度管理用）
  * ============================================================= */
 (function (w) {
   "use strict";
@@ -1177,7 +1177,7 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanLabels 初期化完了");
   /* ---------- 設定 ---------- */
   var 設定 = {
     urlBase: "http://gwsv.nanyo-ad.ad.nanyo/api/items",
-    tableId: 116426,
+    tableId: 130695,
     apiKey : "f2ae46b2fd9669a23313a1230dd3b7ecc094ffc16b0798ae156d940a2be85b5395f44bac9eb20058143500a3c0d56b6c76d4f00acc842a08ff4748ab0beb2f46"
   };
 
@@ -1223,17 +1223,17 @@ if (window.DEBUG_VERBOSE) console.log("✓ KanbanLabels 初期化完了");
       var rows = ページ.rows, total = ページ.total, nextOffset = ページ.nextOffset;
       if (!rows.length) break;
       Array.prototype.push.apply(収集, rows);
-      if (window.DEBUG_VERBOSE) console.log("ページ取得(116426): offset=" + ページ.currentOf + ", pageSize=" + ページ.pageSize + ", 収集=" + 収集.length + "/" + (total || "?"));
+      if (window.DEBUG_VERBOSE) console.log("ページ取得(130695): offset=" + ページ.currentOf + ", pageSize=" + ページ.pageSize + ", 収集=" + 収集.length + "/" + (total || "?"));
       if (total && nextOffset >= total) break;
       offset = nextOffset;
     }
-    w._recordsCache_116426 = 収集;
+    w._recordsCache_130695 = 収集;
     return 収集;
   }
 
-  w.PleasanterApi_116426 = { レコード取得 };
+  w.PleasanterApi_130695 = { レコード取得 };
 
-  if (window.DEBUG_VERBOSE) console.log("✓ PleasanterApi_116426 初期化完了（テーブル116426）");
+  if (window.DEBUG_VERBOSE) console.log("✓ PleasanterApi_130695 初期化完了（テーブル130695）");
 })(window);
 
 /* ===============================================================
@@ -3191,7 +3191,7 @@ if (window.DEBUG_VERBOSE) {
 
     // データ取得
     try {
-      var records = await window.PleasanterApi_116426.レコード取得();
+      var records = await window.PleasanterApi_130695.レコード取得();
       console.log("会計年度管理: " + records.length + "件取得");
 
       // Status=900（終了）を除外
